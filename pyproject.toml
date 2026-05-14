@@ -4,4 +4,54 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "langchain-chroma>=0.2.4",
+    "langchain-community>=0.3.25",
+    "langchain-experimental>=0.3.4",
+    "langchain[openai]>=0.3.25",
+    "llama-index>=0.12.42",
+    "llama-index-core>=0.12.42",
+    "llama-index-embeddings-dashscope>=0.3.0",
+    "llama-index-extractors-entity>=0.3.1",
+    "llama-index-llms-dashscope>=0.4.0",
+    "llama-index-llms-openai-like>=0.4.0",
+    "llama-index-readers-file>=0.4.9",
+    "llama-index-readers-web>=0.4.2",
+    "llama-index-vector-stores-chroma>=0.4.2",
+    "llama-index-vector-stores-postgres>=0.2.8",
+    "llama-index-storage-docstore-postgres>=0.2.5",
+    "llama-index-retrievers-bm25>=0.5.2",
+    "llama-index-storage-chat-store-sqlite>=0.1.1",
+    "notebook>=7.4.3",
+    "nest-asyncio>=1.6.0",
+    "unstructured[pdf]>=0.17.2",
+    "loguru>=0.7.3",
+    "fastapi>=0.115.13",
+    "sentence-transformers>=4.1.0",
+    "spacy>=3.8.7",
+    # Storage and Database
+    "minio>=7.2.0",
+    "psycopg2-binary>=2.9.9",
+    "pgvector>=0.3.4",
+    "sqlalchemy>=2.0.36",
+    # Messaging
+    "kafka-python>=2.0.2",
+    "aiokafka>=0.11.0",
+    # Async support
+    "aiofiles>=24.1.0",
+    "aiohttp>=3.11.11",
+    # Data Processing
+    "pandas>=2.2.3",
+    "numpy>=1.26.4",
+    "pydantic>=2.10.3",
+    "pyyaml>=6.0.2",
+    "python-dotenv>=1.0.1",
+    # File handling
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.27.0",
+    "llama-index-readers-minio>=0.3.0",
+    "asyncpg>=0.30.0",
+    "llama-index-graph-stores-neo4j>=0.4.6",
+    "email-validator>=2.2.0",
+    "requests>=2.31.0",
+]

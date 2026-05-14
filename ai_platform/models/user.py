@@ -1,0 +1,172 @@
+from typing import List
+from typing import Optional
+from xmlrpc.client import DateTime
+from datetime import datetime
+from sqlalchemy import select
+
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+import hashlib
+import secrets
+from loguru import logger
+from ai_platform.config.resource import create_engine
+from sqlalchemy import Column, String, DateTime, Boolean, Text
+from sqlalchemy.ext.asyncio import AsyncSession
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+    # 定义表的字段
+    # 主键
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String(50),nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
+    last_date: Mapped[datetime] = mapped_column(default=datetime.now)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    email: Mapped[str] = mapped_column(unique=True,nullable=True)
+    avatar_url: Mapped[str] = mapped_column(String(500),nullable=True)
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """哈希密码"""
+        salt = secrets.token_hex(16)
+        pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+        return f"{salt}:{pwd_hash.hex()}"
+
+    def verify_password(self, password: str) -> bool:
+        """验证密码"""
+        try:
+            salt, stored_hash = self.password_hash.split(':')
+            pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+            return pwd_hash.hex() == stored_hash
+        except ValueError:
+            return False
+
+class UserSession(Base):
+    """用户会话表"""
+    __tablename__ = 'user_sessions'
+
+    session_token = Column(String(128), primary_key=True, index=True)
+    username = Column(String(50), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    user_agent = Column(String(500), nullable=True)
+    ip_address = Column(String(45), nullable=True)
+
+    def is_expired(self) -> bool:
+        """检查会话是否过期"""
+        return datetime.now() > self.expires_at
+
+    def to_dict(self) -> dict:
+        """转换为字典"""
+        return {
+            'session_token': self.session_token,
+            'username': self.username,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'is_active': self.is_active,
+            'user_agent': self.user_agent,
+            'ip_address': self.ip_address
+        }
+
+
+
+class UserManager:
+    """用户管理器"""
+    def __init__(self):
+        self.engine = None
+
+    async def _get_engine(self):
+        """获取数据库引擎 创建适量123"""
+        if self.engine is None:
+            self.engine = create_engine()
+        return self.engine
+
+    async def init_tables(self):
+        """初始化数据库表"""
+        try:
+            engine = await self._get_engine()
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+            # 创建默认管理员用户
+            # await self.create_default_admin()
+            logger.info("用户表初始化完成")
+        except Exception as e:
+            logger.exception(f"用户表初始化失败: {e}")
+            raise
+
+    #验证用户登陆
+    async def authenticate_user(self, username: str, password: str):
+        try:
+            user=await self.get_username(username)
+         
+            if user and user.verify_password(password):
+                #更新创建时间
+                await self.last_login(username)
+                return user
+
+        except Exception as e:
+            logger.exception(e)
+
+    #获取用户登陆信息
+    async def get_username(self,username:str):
+        """根据用户名获取用户信息"""
+        try:
+            print(username,'username')
+            async with AsyncSession(self.engine) as session:
+            # 构建 select 语句，按 username 字段过滤
+                  stmt = select(User).where(User.username == username)
+                  result = await session.execute(stmt)
+            # 从结果中取出第一个用户对象（没有则为 None）
+                  user = result.scalars().first()
+            
+                  print(user, 'res')
+                  return user
+        except Exception as e:
+            logger.exception(f"根据用户名获取用户信息失败:")
+            return None
+
+    #更新登陆时间
+    async def last_login(self,username:str):
+        try:
+            async with AsyncSession(self.engine) as session:
+                session = await session.update(User,last_login=datetime.now())
+                return True
+        except Exception as e:
+            logger.exception(e)
+
+    async def create_user(self, username: str, password: str, email: Optional[str] = None):
+        """创建用户"""
+        try:
+            password_hash = User.hash_password(password)
+            async with AsyncSession(self.engine) as session:
+                if await session.get(User,username) or await session.get(User,email):
+                    raise HTTPException(
+                        status_code=409,
+                        detail='用户名或者邮箱已存在'
+                    )
+                else:    
+                    new_user = User(
+                        username=username,
+                        password_hash=password_hash,
+                        email=email,
+                        is_active=True
+                    )
+                session.add(new_user)
+                await session.commit()
+                await session.refresh(new_user)
+                return new_user
+        except Exception as e:
+            logger.exception(f"创建用户失败: {e}")
+            raise
+
+
+user_manager = UserManager()
