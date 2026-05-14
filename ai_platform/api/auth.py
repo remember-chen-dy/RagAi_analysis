@@ -1,5 +1,6 @@
 import datetime
 from pydoc import describe
+from re import M
 from venv import logger
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Response, status
@@ -13,6 +14,7 @@ T = TypeVar('T')
 
 class ApiResponse(BaseModel, Generic[T]):
     """通用API响应模型"""
+    code: int = Field(description="响应状态码")
     success: bool = Field(description="请求是否成功")
     message: str = Field(description="响应消息")
     data: Optional[T] = Field(default=None, description="响应数据")
@@ -61,7 +63,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     """用户注册模型"""
     username: str = Field(
-        min_length=3,
+        min_length=1,
         max_length=50,
         description="用户名",
         examples=["admin"]
@@ -72,7 +74,13 @@ class RegisterRequest(BaseModel):
         description="密码",
         examples=["123456"]
     )
-    email: Optional[EmailStr] = None
+    email: str=Field(
+        default=None,
+        min_length=1,
+        max_length=50,
+        description="邮箱",
+        examples=[""]
+    )
 
 @router.post("/login")
 async def loging(login_data: LoginRequest, request: Request, response: Response):
@@ -80,17 +88,24 @@ async def loging(login_data: LoginRequest, request: Request, response: Response)
     logger.info(f"Login attempt: {login_data.username}")  # 注意 logger 的用法
 
     user = await user_manager.authenticate_user(login_data.username, login_data.password)
-    print('登陆成功')
-    print(user,'1234')
-
+    print(user,'use2222r')
     if user is None:
         logger.warning(f"Failed login for {login_data.username}")
         raise HTTPException(
             status_code=200,
             detail="用户账号或者密码输入错误"
         )
-    logger.info(f"Successful login for {login_data.username}")
-    return user
+
+    return ApiResponse(
+        success=True,
+        message="登录成功",
+        code=200,
+        data={
+  
+        },
+        timestamp=datetime.datetime.now()
+    )
+
 
 @router.post("/register")
 async def register(user_data:RegisterRequest,request: Request, response: Response):
@@ -99,19 +114,14 @@ async def register(user_data:RegisterRequest,request: Request, response: Respons
         email=user_data.email,
         password=user_data.password,
     )
-    print('-'*50)
-    # print(user,'user')
-    # if not user:
-    #     raise HTTPException(
-    #         status_code=409,
-    #         detail='用户名或者邮箱已存在'
-    #     )
 
-    # return ApiResponse(
-    #     success=True,
-    #     message="注册成功",
-    #     data={"username": user.username}
-    # )
+    return ApiResponse(
+        success=True,
+        code=200,
+        message="注册成功",
+        data={},
+        timestamp=datetime.datetime.now()
+    )
 
 
 

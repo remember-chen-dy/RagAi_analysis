@@ -162,14 +162,16 @@ const handleLogin = async () => {
       password: form.password,
       remember_me: form.rememberMe
     })
-    
+    console.log(result)
     // 存储用户信息到 localStorage（兼容现有代码）
     localStorage.setItem('isAuthenticated', 'true')
-    localStorage.setItem('username', result.user.username)
-    localStorage.setItem('userInfo', JSON.stringify(result.user))
+    // localStorage.setItem('username', result.user.username)
+    // localStorage.setItem('userInfo', JSON.stringify(result.user))
+    if(result.code==200){
+     // 登录成功后跳转到主页
+    await router.push('/files') 
+    }
     
-    // 登录成功后跳转到主页
-    await router.push('/files')
   } catch (error: any) {
     console.error('登录失败:', error)
     errorMessage.value = error.message || '登录失败，请重试'

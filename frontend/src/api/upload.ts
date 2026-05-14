@@ -2,8 +2,7 @@
 
 import type {FileListResponse as FileListResponseType, UploadResponse} from '../types';
 import { getAuthHeaders } from './auth'
-
-const API_BASE_URL = 'http://localhost:8000'
+import { API_BASE_URL } from '@/config'
 
 interface FileUploadResponse {
   success: boolean

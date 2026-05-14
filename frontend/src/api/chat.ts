@@ -1,4 +1,5 @@
 import { getAuthHeaders } from './auth'
+import { API_BASE_URL } from '@/config'
 
 // 聊天消息类型
 export interface ChatMessage {
@@ -62,7 +63,7 @@ export interface ChatHistoryResponse {
 
 // 聊天API接口
 export class ChatAPI {
-  private static baseURL = 'http://localhost:8000' // 后端API地址
+  private static baseURL = API_BASE_URL
   private static currentSessionId: string | null = null
 
   // 设置当前会话ID

@@ -37,9 +37,8 @@ interface ApiResponse {
   data?: any
 }
 
-const API_BASE_URL = 'http://localhost:8000'
+import { API_BASE_URL } from '@/config'
 
-// 获取存储的认证令牌
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken')
 }
@@ -62,7 +61,7 @@ const getAuthHeaders = (): Record<string, string> => {
 
 // 登录API
 export const loginApi = async (data: LoginRequest): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/users/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -85,7 +84,7 @@ export const loginApi = async (data: LoginRequest): Promise<LoginResponse> => {
 
 // 注册API
 export const registerApi = async (data: RegisterRequest): Promise<ApiResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+  const response = await fetch(`${API_BASE_URL}/users/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

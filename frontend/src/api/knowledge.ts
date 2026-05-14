@@ -1,6 +1,7 @@
 // 知识库管理API客户端
 
 import { getAuthHeaders } from './auth'
+import { API_BASE_URL } from '@/config'
 
 // 知识库类型定义
 export interface KnowledgeBase {
@@ -85,7 +86,7 @@ export interface KnowledgeBaseSettingsResponse {
   data?: KnowledgeBaseSettings
 }
 
-const API_BASE_URL = 'http://localhost:8000'
+
 
 // 获取知识库列表
 export const getKnowledgeBases = async (limit: number = 50, offset: number = 0, status?: string): Promise<KnowledgeBaseListResponse> => {

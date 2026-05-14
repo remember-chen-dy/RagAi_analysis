@@ -69,7 +69,7 @@ router.beforeEach((to, _, next) => {
 
   // 简单的认证检查 (实际项目中应该检查真实的认证状态)
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-
+  
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
   } else {

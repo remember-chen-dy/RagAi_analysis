@@ -3,6 +3,7 @@ from typing import Optional
 from xmlrpc.client import DateTime
 from datetime import datetime
 from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Depends, Request, Response, status
 
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
@@ -15,7 +16,7 @@ import hashlib
 import secrets
 from loguru import logger
 from ai_platform.config.resource import create_engine
-from sqlalchemy import Column, String, DateTime, Boolean, Text
+from sqlalchemy import Column, String, DateTime, Boolean, Text, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 Base = declarative_base()
 
@@ -25,7 +26,7 @@ class User(Base):
     # 定义表的字段
     # 主键
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(50),nullable=False)
+    username: Mapped[str] = mapped_column(String(50),nullable=False,unique=True)
     password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
     last_date: Mapped[datetime] = mapped_column(default=datetime.now)
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -39,10 +40,11 @@ class User(Base):
         pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
         return f"{salt}:{pwd_hash.hex()}"
 
-    def verify_password(self, password: str) -> bool:
+    @staticmethod
+    def verify_password(password_hash: str, password: str) -> bool:
         """验证密码"""
         try:
-            salt, stored_hash = self.password_hash.split(':')
+            salt, stored_hash = password_hash.split(':')
             pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
             return pwd_hash.hex() == stored_hash
         except ValueError:
@@ -76,8 +78,6 @@ class UserSession(Base):
             'ip_address': self.ip_address
         }
 
-
-
 class UserManager:
     """用户管理器"""
     def __init__(self):
@@ -97,7 +97,7 @@ class UserManager:
                 await conn.run_sync(Base.metadata.create_all)
 
             # 创建默认管理员用户
-            # await self.create_default_admin()
+            # await self.create_default_admin() 
             logger.info("用户表初始化完成")
         except Exception as e:
             logger.exception(f"用户表初始化失败: {e}")
@@ -106,64 +106,80 @@ class UserManager:
     #验证用户登陆
     async def authenticate_user(self, username: str, password: str):
         try:
-            user=await self.get_username(username)
-         
-            if user and user.verify_password(password):
-                #更新创建时间
-                await self.last_login(username)
-                return user
-
+            user = await self.get_username(username)
+            if user is None:
+                return None
+            if not user.is_active:
+                return None
+            if not User.verify_password(user.password_hash, password):
+                return None
+            await self.last_login(user.id)
+            return user
         except Exception as e:
             logger.exception(e)
+            return None
 
     #获取用户登陆信息
-    async def get_username(self,username:str):
+    async def get_username(self, username: str):
         """根据用户名获取用户信息"""
         try:
-            print(username,'username')
+            await self._get_engine()
             async with AsyncSession(self.engine) as session:
-            # 构建 select 语句，按 username 字段过滤
-                  stmt = select(User).where(User.username == username)
-                  result = await session.execute(stmt)
-            # 从结果中取出第一个用户对象（没有则为 None）
-                  user = result.scalars().first()
-            
-                  print(user, 'res')
-                  return user
+                stmt = select(User).where(User.username == username)
+                result = await session.execute(stmt)
+                user = result.scalars().first()
+                if user:
+                    session.expunge(user)
+                return user
         except Exception as e:
-            logger.exception(f"根据用户名获取用户信息失败:")
+            logger.exception(f"根据用户名获取用户信息失败: {e}")
             return None
 
     #更新登陆时间
-    async def last_login(self,username:str):
+    async def last_login(self, id: int):
         try:
+            await self._get_engine()
             async with AsyncSession(self.engine) as session:
-                session = await session.update(User,last_login=datetime.now())
-                return True
+                user = await session.get(User, id)
+                if user:
+                    user.last_date = datetime.now()
+                    await session.commit()
+                    session.expunge(user)
+                return user
         except Exception as e:
             logger.exception(e)
+            return None
 
     async def create_user(self, username: str, password: str, email: Optional[str] = None):
         """创建用户"""
         try:
+            await self._get_engine()
             password_hash = User.hash_password(password)
             async with AsyncSession(self.engine) as session:
-                if await session.get(User,username) or await session.get(User,email):
+                conditions = [User.username == username]
+                if email:
+                    conditions.append(User.email == email)
+                stmt = select(User).where(or_(*conditions))
+                result = await session.execute(stmt)
+                existing_user = result.scalars().first()
+                if existing_user:
                     raise HTTPException(
                         status_code=409,
                         detail='用户名或者邮箱已存在'
                     )
-                else:    
-                    new_user = User(
-                        username=username,
-                        password_hash=password_hash,
-                        email=email,
-                        is_active=True
-                    )
+                new_user = User(
+                    username=username,
+                    password_hash=password_hash,
+                    email=email,
+                    is_active=True
+                )
                 session.add(new_user)
                 await session.commit()
                 await session.refresh(new_user)
+                session.expunge(new_user)
                 return new_user
+        except HTTPException:
+            raise
         except Exception as e:
             logger.exception(f"创建用户失败: {e}")
             raise
