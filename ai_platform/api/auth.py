@@ -20,7 +20,6 @@ class ApiResponse(BaseModel, Generic[T]):
     data: Optional[T] = Field(default=None, description="响应数据")
     timestamp: datetime.datetime = Field(default_factory=datetime.datetime.now, description="响应时间戳")
 
-
 class UserResponse(BaseModel):
     """用户信息响应模型"""
     username: str = Field(description="用户名", examples=["admin"])
@@ -119,7 +118,7 @@ async def register(user_data:RegisterRequest,request: Request, response: Respons
         code=200,
         message="注册成功",
         data={},
-        timestamp=datetime.datetime.now()
+        timestamp=datetime.datetime.now()        
     )
 
 

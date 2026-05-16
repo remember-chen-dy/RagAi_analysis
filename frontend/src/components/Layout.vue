@@ -59,20 +59,50 @@
 
           <!-- 右侧操作区域 -->
           <div class="hidden md:flex items-center space-x-4">
-            <!-- 用户信息 -->
-            <span class="text-sm text-gray-600">{{ username }}</span>
+            <!-- 用户下拉菜单 -->
+            <div class="relative" ref="userMenuRef">
+              <button
+                  @click="toggleUserMenu"
+                  class="flex items-center space-x-2 text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </div>
+                <span class="text-sm">{{ username }}</span>
+                <svg class="w-4 h-4" :class="{ 'rotate-180': showUserMenu }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
 
-            <!-- 退出登录按钮 -->
-            <button
-                @click="handleLogout"
-                class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="退出登录"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-              </svg>
-            </button>
+              <!-- 下拉菜单 -->
+              <div
+                  v-if="showUserMenu"
+                  class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50"
+              >
+                <!-- <button
+                    @click="handleSettings"
+                    class="w-full flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg class="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.065 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.065c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.065-2.573c-.94-1.543.826-3.31 2.37-2.37.996.458 1.876.99 2.572 1.065.426.122.84.316 1.065.572.225.256.426.572.572.99.146.418.316.84.572 1.065.256.225.572.426.99.572.418.146.84.316 1.065.572z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  设置
+                </button> -->
+                <div class="border-t border-gray-100 my-1"></div>
+                <button
+                    @click="handleLogout"
+                    class="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                  </svg>
+                  退出登录
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- 移动端菜单按钮 -->
@@ -158,36 +188,62 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
+import {onMounted, onUnmounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {logoutApi} from '@/api/auth'
+import {Modal} from 'ant-design-vue'
 
 const router = useRouter()
 const showMobileMenu = ref(false)
+const showUserMenu = ref(false)
 const username = ref('')
-
+const userMenuRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  // 获取用户名
   username.value = localStorage.getItem('username') || ''
+  document.addEventListener('click', handleClickOutside)
 })
 
-const handleLogout = async () => {
-  try {
-    await logoutApi()
-  } catch (error) {
-    console.error('登出失败:', error)
-    // 即使API调用失败，也清除本地状态
-  } finally {
-    // 清除本地存储
-    localStorage.removeItem('isAuthenticated')
-    localStorage.removeItem('username')
-    localStorage.removeItem('userInfo')
-    localStorage.removeItem('authToken')
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
-    // 跳转到登录页面
-    await router.push('/login')
+const handleClickOutside = (event: MouseEvent) => {
+  if (userMenuRef.value && !userMenuRef.value.contains(event.target as Node)) {
+    showUserMenu.value = false
   }
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
+const handleSettings = () => {
+  showUserMenu.value = false
+  router.push('/settings')
+}
+
+const handleLogout = () => {
+  showUserMenu.value = false
+  Modal.confirm({
+    title: '确认退出',
+    content: '确定要退出登录吗？',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await logoutApi()
+      } catch (error) {
+        console.error('登出失败:', error)
+      } finally {
+        localStorage.removeItem('isAuthenticated')
+        localStorage.removeItem('username')
+        localStorage.removeItem('userInfo')
+        localStorage.removeItem('authToken')
+        await router.push('/login')
+      }
+    }
+  })
 }
 
 const toggleMobileMenu = () => {

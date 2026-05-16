@@ -61,26 +61,6 @@
               </div>
             </div>
 
-            <!-- 真实姓名输入框 -->
-            <div>
-              <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1.5">
-                真实姓名 <span class="text-gray-400 text-xs">(可选)</span>
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <input
-                  id="fullName"
-                  v-model="form.fullName"
-                  type="text"
-                  class="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 placeholder-gray-400 text-sm text-gray-900 transition-colors"
-                  placeholder="请输入真实姓名"
-                />
-              </div>
-            </div>
 
             <!-- 密码输入框 -->
             <div>
@@ -187,7 +167,7 @@
       <!-- 版权信息 -->
       <div class="text-center mt-4">
         <p class="text-xs text-gray-400">
-          © 2025 AI知识库管理分析平台
+          © 2026 AI知识库管理分析平台
         </p>
       </div>
     </div>

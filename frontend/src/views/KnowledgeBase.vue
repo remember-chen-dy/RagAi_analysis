@@ -536,9 +536,10 @@
     </main>
 
     <!-- 创建知识库模态框 -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
+    <div v-if="showCreateModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+        <!-- 固定标题区域 -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
           <h3 class="text-xl font-medium text-gray-900">创建新知识库</h3>
           <button
               @click="showCreateModal = false"
@@ -550,6 +551,8 @@
           </button>
         </div>
 
+        <!-- 滚动内容区域 -->
+        <div class="flex-1 overflow-y-auto p-6 modal-scroll">
         <form @submit.prevent="createKnowledgeBase">
           <div class="space-y-6">
             <div>
@@ -694,7 +697,8 @@
               {{ isCreating ? '创建中...' : '创建知识库' }}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -1048,7 +1052,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {
   createKnowledgeBase as createKnowledgeBaseAPI,
   deleteKnowledgeBase as deleteKnowledgeBaseAPI,
@@ -1884,6 +1888,26 @@ const getFileType = (fileName: string) => {
 onMounted(() => {
   refreshKnowledgeBases()
 })
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (showCreateModal.value) {
+      showCreateModal.value = false
+    } else if (showEditModal.value) {
+      showEditModal.value = false
+    } else if (showSettingsModal.value) {
+      showSettingsModal.value = false
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>
@@ -1892,12 +1916,25 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 3px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
 }
 
 /* 自定义滚动条样式 */

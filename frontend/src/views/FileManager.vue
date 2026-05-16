@@ -36,7 +36,7 @@
           <!-- 上传组件区域 -->
           <div class="flex-1 min-h-0 px-4 py-3">
             <FileUpload @files-updated="handleFilesUpdate" ref="fileUploadRef" />
-          </div>
+          </div> 
 
           <!-- 底部操作区域 -->
           <div class="px-4 py-2 border-t border-gray-100 flex-shrink-0">
