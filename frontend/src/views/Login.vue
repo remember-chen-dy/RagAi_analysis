@@ -13,7 +13,7 @@
         <h2 class="text-3xl font-light text-gray-900 mb-2">
           欢迎回来
         </h2>
-        <p class="text-gray-500">妙码AI知识库管理分析平台</p>
+        <p class="text-gray-500">知识库管理分析平台</p>
       </div>
 
       <!-- 登录卡片 -->
@@ -125,7 +125,7 @@
       <!-- 版权信息 -->
       <div class="text-center">
         <p class="text-sm text-gray-400">
-          © 2025 行明 - AI知识库管理分析平台
+          © 2026 remember - 知识库管理分析平台
         </p>
       </div>
     </div>
@@ -136,6 +136,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { loginApi } from '@/api/auth'
+import { message } from 'ant-design-vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -167,9 +168,14 @@ const handleLogin = async () => {
     localStorage.setItem('isAuthenticated', 'true')
     // localStorage.setItem('username', result.user.username)
     // localStorage.setItem('userInfo', JSON.stringify(result.user))
+    console.log(result)
     if(result.code==200){
      // 登录成功后跳转到主页
+     message.success('登录成功')
     await router.push('/files') 
+    }else{
+      
+      errorMessage.value = result.detail || '登录失败，请重试'
     }
     
   } catch (error: any) {

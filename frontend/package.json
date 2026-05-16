@@ -12,6 +12,7 @@
     "@tailwindcss/postcss": "^4.1.10",
     "@tailwindcss/vite": "^4.1.10",
     "@types/marked": "^6.0.0",
+    "ant-design-vue": "^4.2.6",
     "highlight.js": "^11.11.1",
     "marked": "^16.0.0",
     "tailwindcss": "^4.1.10",

@@ -88,7 +88,6 @@ async def loging(login_data: LoginRequest, request: Request, response: Response)
     logger.info(f"Login attempt: {login_data.username}")  # 注意 logger 的用法
 
     user = await user_manager.authenticate_user(login_data.username, login_data.password)
-    print(user,'use2222r')
     if user is None:
         logger.warning(f"Failed login for {login_data.username}")
         raise HTTPException(

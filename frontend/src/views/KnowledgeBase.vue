@@ -11,7 +11,7 @@
           </div>
 
           <!-- 统计和操作区域 -->
-          <div class="flex items-center space-x-8">
+          <div class="flex items-center space-x-8 ">
             <div class="flex items-center space-x-6 text-sm">
               <div class="text-center">
                 <div class="text-2xl font-light text-gray-900">{{ knowledgeBases.length }}</div>
@@ -37,7 +37,7 @@
     </header>
 
     <!-- 主内容区域 -->
-    <main class="flex-1 px-8 py-8 min-h-0 overflow-hidden">
+    <main class="flex-1 max-h-[calc(100vh-140px)] px-6 py-4 mb-4 overflow-hidden">
       <div class="grid grid-cols-12 gap-6 h-full">
 
         <!-- 左侧：知识库列表 -->

@@ -149,7 +149,7 @@ class UserManager:
         except Exception as e:
             logger.exception(e)
             return None
-
+    
     async def create_user(self, username: str, password: str, email: Optional[str] = None):
         """创建用户"""
         try:

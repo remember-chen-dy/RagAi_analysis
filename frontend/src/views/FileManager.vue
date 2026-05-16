@@ -1,53 +1,48 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-screen overflow-hidden">
     <!-- 页面头部 -->
     <header class="bg-white border-b border-gray-200 flex-shrink-0">
-      <div class="max-w-full mx-auto px-8 py-6">
+      <div class="max-w-full mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
           <!-- 标题区域 -->
           <div>
-            <h1 class="text-3xl font-light text-gray-900 mb-2">文件管理</h1>
-            <p class="text-gray-500">智能文档存储与管理</p>
+            <h1 class="text-xl font-medium text-gray-900">文件管理</h1>
+            <p class="text-sm text-gray-500">智能文档存储与管理</p>
           </div>
-
-
         </div>
-
-
       </div>
     </header>
 
     <!-- 主要内容区域 -->
-    <main class="flex-1 px-8 py-8 min-h-0">
+    <main class="flex-1 max-h-[calc(100vh-140px)] px-6 py-4 mb-4 overflow-hidden">
       <!-- 横向布局容器 -->
-      <div class="grid grid-cols-12 gap-6 h-full">
+      <div class="grid grid-cols-12 gap-4 h-full">
         
         <!-- 左侧：文件上传区域 -->
         <div class="col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
           <!-- 上传区域头部 -->
-          <div class="p-6 border-b border-gray-100 flex-shrink-0">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">文件上传</h2>
-            <div class="text-sm text-gray-500">
-              <p class="mb-2">支持的文件格式：</p>
+          <div class="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+            <h2 class="text-sm font-medium text-gray-900 mb-2">文件上传</h2>
+            <div class="text-xs text-gray-500">
               <div class="flex flex-wrap gap-1">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">PDF</span>
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">TXT</span>
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">MD</span>
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">DOCX</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">PDF</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">TXT</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">MD</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">DOCX</span>
               </div>
             </div>
           </div>
 
           <!-- 上传组件区域 -->
-          <div class="flex-1 p-6 min-h-0">
+          <div class="flex-1 min-h-0 px-4 py-3">
             <FileUpload @files-updated="handleFilesUpdate" ref="fileUploadRef" />
           </div>
 
           <!-- 底部操作区域 -->
-          <div class="p-6 border-t border-gray-100 flex-shrink-0">
-            <div class="flex items-center justify-between text-xs text-gray-500">
+          <div class="px-4 py-2 border-t border-gray-100 flex-shrink-0">
+            <div class="flex items-center justify-between text-xs text-gray-400">
               <span>拖拽文件到此处</span>
-              <span class="text-gray-600">或点击上方区域选择文件</span>
+              <span>或点击上方区域选择</span>
             </div>
           </div>
         </div>
@@ -57,31 +52,31 @@
           <section class="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
             
             <!-- 文件管理头部 -->
-            <div class="p-6 border-b border-gray-100 flex-shrink-0">
+            <div class="px-4 py-3 border-b border-gray-100 flex-shrink-0">
               <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                  <div class="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <div class="flex items-center space-x-2">
+                  <div class="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 class="text-lg font-medium text-gray-900">文件库</h2>
-                    <p class="text-sm text-gray-500">管理和浏览已上传的文件</p>
+                    <h2 class="text-sm font-medium text-gray-900">文件库</h2>
+                    <p class="text-xs text-gray-500">管理和浏览已上传的文件</p>
                   </div>
                 </div>
                 
                 <!-- 统计信息和操作 -->
-                <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-4">
                   <!-- 文件统计 -->
-                  <div class="flex items-center space-x-4 text-sm">
+                  <div class="flex items-center space-x-3 text-xs">
                     <div class="text-center">
-                      <div class="text-xl font-light text-gray-900">{{ uploadedFilesCount }}</div>
-                      <div class="text-gray-400 uppercase tracking-wide text-xs">文件</div>
+                      <div class="text-base font-medium text-gray-900">{{ uploadedFilesCount }}</div>
+                      <div class="text-gray-400 uppercase tracking-wide">文件</div>
                     </div>
                     <div class="text-center">
-                      <div class="text-xl font-light text-gray-900">{{ totalStorageSize }}</div>
-                      <div class="text-gray-400 uppercase tracking-wide text-xs">存储</div>
+                      <div class="text-base font-medium text-gray-900">{{ totalStorageSize }}</div>
+                      <div class="text-gray-400 uppercase tracking-wide">存储</div>
                     </div>
                   </div>
                   
@@ -89,11 +84,11 @@
                   <button
                     @click="refreshFiles"
                     :disabled="isLoadingFiles"
-                    class="text-gray-600 hover:text-gray-900 disabled:text-gray-400 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    class="text-gray-500 hover:text-gray-900 disabled:text-gray-300 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                     title="刷新列表"
                   >
                     <svg
-                      class="w-5 h-5"
+                      class="w-4 h-4"
                       :class="{ 'loading-spinner': isLoadingFiles }"
                       fill="none"
                       stroke="currentColor"
@@ -107,104 +102,79 @@
             </div>
 
             <!-- 文件列表内容 -->
-            <div class="flex-1 min-h-0 overflow-hidden">
-              <div class="h-full flex flex-col">
-                <!-- 文件内容区域 -->
-                <div class="flex-1 overflow-y-auto p-6" style="max-height: calc(100vh - 400px);">
-                  <!-- 加载状态 -->
-                  <div v-if="isLoadingFiles" class="flex items-center justify-center h-full">
-                    <div class="inline-flex items-center space-x-3 text-gray-500">
-                      <svg class="w-5 h-5 loading-spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span class="text-sm">加载中...</span>
+            <div class="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-6">
+              <!-- 加载状态 -->
+              <div v-if="isLoadingFiles" class="flex items-center justify-center h-full">
+                <div class="inline-flex items-center space-x-2 text-gray-500">
+                  <svg class="w-4 h-4 loading-spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span class="text-xs">加载中...</span>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-else-if="fileList.length === 0" class="flex flex-col items-center justify-center h-full">
+                <div class="w-12 h-12 mb-3 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p class="text-gray-500 text-sm font-medium mb-1">暂无上传文件</p>
+                <p class="text-gray-400 text-xs">在左侧上传区域添加文件开始使用</p>
+              </div>
+
+              <!-- 文件网格 -->
+              <div v-else class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div
+                  v-for="file in fileList"
+                  :key="file.object_name"
+                  class="bg-gray-50 rounded-lg border border-gray-200 p-2 hover:shadow-sm hover:bg-white transition-all group flex items-center justify-between"
+                >
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getFileIcon(getFileName(file.object_name))" />
+                    </svg>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-medium text-gray-900 truncate" :title="getFileName(file.object_name)">
+                        {{ getFileName(file.object_name) }}
+                      </p>
+                      <p class="text-xs text-gray-400">{{ formatFileSize(file.size) }}</p>
                     </div>
                   </div>
-
-                  <!-- 空状态 -->
-                  <div v-else-if="fileList.length === 0" class="flex flex-col items-center justify-center h-full">
-                    <div class="w-16 h-16 mb-4 bg-gray-100 rounded-xl flex items-center justify-center">
-                      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p class="text-gray-500 text-lg font-medium mb-2">暂无上传文件</p>
-                    <p class="text-gray-400 text-sm">在左侧上传区域添加文件开始使用</p>
-                  </div>
-
-                  <!-- 文件网格 -->
-                  <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <div
-                      v-for="file in fileList"
-                      :key="file.object_name"
-                      class="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md hover:bg-white transition-all duration-200 group h-fit"
+                  <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+                      {{ getFileType(getFileName(file.object_name)).toUpperCase() }}
+                    </span>
+                    <button
+                      v-if="UploadAPI.isSupportedForPreview(getFileName(file.object_name))"
+                      @click="previewFileContent(file)"
+                      class="text-gray-400 hover:text-gray-900 p-0.5 rounded hover:bg-gray-200 transition-colors"
+                      title="预览"
                     >
-                      <!-- 文件预览缩略图 -->
-                      <div class="w-full h-24 bg-white rounded-lg mb-3 flex items-center justify-center overflow-hidden group-hover:bg-gray-50 transition-colors">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getFileIcon(getFileName(file.object_name))" />
-                        </svg>
-                      </div>
-
-                      <!-- 文件信息 -->
-                      <div class="mb-3">
-                        <h3 class="font-medium text-gray-900 truncate mb-2 text-sm" :title="getFileName(file.object_name)">
-                          {{ getFileName(file.object_name) }}
-                        </h3>
-                        <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
-                          <span>{{ formatFileSize(file.size) }}</span>
-                          <span>{{ formatDate(file.last_modified) }}</span>
-                        </div>
-                        <div class="flex items-center space-x-1">
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                            {{ getFileType(getFileName(file.object_name)).toUpperCase() }}
-                          </span>
-                          <span
-                            v-if="UploadAPI.isSupportedForPreview(getFileName(file.object_name))"
-                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700"
-                          >
-                            可预览
-                          </span>
-                        </div>
-                      </div>
-
-                      <!-- 操作按钮 -->
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-1">
-                          <button
-                            v-if="UploadAPI.isSupportedForPreview(getFileName(file.object_name))"
-                            @click="previewFileContent(file)"
-                            class="text-gray-600 hover:text-gray-900 p-1.5 rounded-lg hover:bg-white transition-colors"
-                            title="预览"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-
-                          <button
-                            @click="downloadFile(file.object_name)"
-                            class="text-gray-600 hover:text-gray-900 p-1.5 rounded-lg hover:bg-white transition-colors"
-                            title="下载"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m3 8H5a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2z" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        <button
-                          @click="deleteFile(file.object_name)"
-                          class="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                          title="删除"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                    <button
+                      @click="downloadFile(file.object_name)"
+                      class="text-gray-400 hover:text-gray-900 p-0.5 rounded hover:bg-gray-200 transition-colors"
+                      title="下载"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-4-4m4 4l4-4m3 8H5a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      @click="deleteFile(file.object_name)"
+                      class="text-gray-400 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors"
+                      title="删除"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -215,53 +185,35 @@
         <!-- 右侧：使用统计区域 -->
         <div class="col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
           <!-- 统计区域头部 -->
-          <div class="p-6 border-b border-gray-100">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">使用统计</h2>
+          <div class="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+            <h2 class="text-sm font-medium text-gray-900 mb-3">使用统计</h2>
             
             <!-- 快速统计卡片 -->
-            <div class="grid grid-cols-1 gap-3">
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-xs text-gray-500">总文件数</p>
-                    <p class="text-lg font-medium text-gray-900">{{ uploadedFilesCount }}</p>
-                  </div>
-                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-gray-500">总文件数</p>
+                <p class="text-base font-medium text-gray-900">{{ uploadedFilesCount }}</p>
               </div>
               
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-xs text-gray-500">存储大小</p>
-                    <p class="text-lg font-medium text-gray-900">{{ totalStorageSize }}</p>
-                  </div>
-                  <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                    </svg>
-                  </div>
-                </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-gray-500">存储大小</p>
+                <p class="text-base font-medium text-gray-900">{{ totalStorageSize }}</p>
               </div>
             </div>
           </div>
 
           <!-- 详细统计内容 -->
-          <div class="flex-1 overflow-y-auto p-6">
+          <div class="flex-1 min-h-0 overflow-y-auto px-4 py-3">
             <AnalyticsView />
           </div>
 
           <!-- 底部操作区域 -->
-          <div class="p-6 border-t border-gray-100">
-            <div class="flex items-center justify-between text-xs text-gray-500">
+          <div class="px-4 py-2 border-t border-gray-100 flex-shrink-0">
+            <div class="flex items-center justify-between text-xs text-gray-400">
               <span>存储使用情况</span>
               <button
                 @click="refreshFiles"
-                class="text-gray-600 hover:text-gray-900 transition-colors"
+                class="text-gray-500 hover:text-gray-900 transition-colors"
                 title="刷新统计"
               >
                 刷新
