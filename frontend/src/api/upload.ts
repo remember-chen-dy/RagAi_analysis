@@ -51,8 +51,8 @@ export class UploadAPI {
   /**
    * 获取可选择的知识库列表
    */
-  static async getKnowledgeBases(): Promise<{ success: boolean; data: { knowledge_bases: any[]; total: number }; message: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/files/knowledge-bases`, {
+  static async getKnowledgeBases(): Promise<{ success: boolean; data: any[]; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/knowledge/list`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

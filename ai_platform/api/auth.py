@@ -39,7 +39,7 @@ class LoginResponse(BaseModel):
     session_token: str = Field(description="会话令牌", examples=["abc123xyz"])
     expires_at: str = Field(description="令牌过期时间", examples=["2024-01-02T00:00:00"])
 
-class LoginRequest(BaseModel):
+class LoginRequest(BaseModel):  
     """用户登录请求模型"""
     username: str = Field(
         min_length=3,
@@ -120,11 +120,4 @@ async def register(user_data:RegisterRequest,request: Request, response: Respons
         data={},
         timestamp=datetime.datetime.now()        
     )
-
-
-
-
-
-
-
 

@@ -25,13 +25,13 @@ class User(Base):
     __tablename__ = "users"
     # 定义表的字段
     # 主键
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(50),nullable=False,unique=True)
-    password_hash: Mapped[str] = mapped_column(String(200),nullable=False)
-    last_date: Mapped[datetime] = mapped_column(default=datetime.now)
-    is_active: Mapped[bool] = mapped_column(default=True)
-    email: Mapped[str] = mapped_column(unique=True,nullable=True)
-    avatar_url: Mapped[str] = mapped_column(String(500),nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True,comment="用户ID")
+    username: Mapped[str] = mapped_column(String(50),nullable=False,unique=True,comment="用户名")
+    password_hash: Mapped[str] = mapped_column(String(200),nullable=False,comment="密码哈希值")
+    last_date: Mapped[datetime] = mapped_column(default=datetime.now,comment="最后登录时间")
+    is_active: Mapped[bool] = mapped_column(default=True,comment="是否激活")
+    email: Mapped[str] = mapped_column(unique=True,nullable=True,comment="邮箱")
+    avatar_url: Mapped[str] = mapped_column(String(500),nullable=True,comment="头像URL")
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -54,13 +54,13 @@ class UserSession(Base):
     """用户会话表"""
     __tablename__ = 'user_sessions'
 
-    session_token = Column(String(128), primary_key=True, index=True)
-    username = Column(String(50), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.now, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-    user_agent = Column(String(500), nullable=True)
-    ip_address = Column(String(45), nullable=True)
+    session_token = Column(String(128), primary_key=True, index=True,comment="会话令牌")
+    username = Column(String(50), nullable=False, index=True,comment="用户名")
+    created_at = Column(DateTime, default=datetime.now, nullable=False,comment="创建时间")
+    expires_at = Column(DateTime, nullable=False,comment="过期时间")
+    is_active = Column(Boolean, default=True, nullable=False,comment="是否激活")
+    user_agent = Column(String(500), nullable=True,comment="用户代理")
+    ip_address = Column(String(45), nullable=True,comment="IP地址")
 
     def is_expired(self) -> bool:
         """检查会话是否过期"""
@@ -84,7 +84,7 @@ class UserManager:
         self.engine = None
 
     async def _get_engine(self):
-        """获取数据库引擎 创建适量123"""
+        """获取数据库引擎 创建适量"""
         if self.engine is None:
             self.engine = create_engine()
         return self.engine

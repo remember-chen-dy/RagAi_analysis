@@ -17,5 +17,15 @@ export default defineConfig({
         tailwindcss
       ]
     }
+  },
+  server: {
+    host: '0.0.0.0',  // 关键：监听所有网络接口
+    port: 5173,
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://192.168.1.1:8000',
+      }
+    }
   }
 })

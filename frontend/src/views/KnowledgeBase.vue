@@ -147,9 +147,9 @@
                 </p>
                 <div class="flex items-center justify-between text-xs"
                      :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-400' : 'text-gray-400'">
-                  <span>{{ kb.document_count }} 个文档</span>
+                  <span>{{ kb.document_count ?? 0 }} 个文档</span>
                   <div class="flex items-center space-x-2">
-                    <span>{{ formatDate(kb.updated_at) }}</span>
+                    <span>{{ formatDate(kb.update_time) }}</span>
                     <!-- 操作按钮 -->
                     <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
@@ -503,19 +503,19 @@
                 <div class="space-y-3">
                   <div class="flex justify-between items-center py-2">
                     <span class="text-xs text-gray-600">文档数量</span>
-                    <span class="text-sm font-medium text-gray-900">{{ selectedKnowledgeBase.document_count }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ selectedKnowledgeBase.document_count ?? 0 }}</span>
                   </div>
                   <div class="flex justify-between items-center py-2">
                     <span class="text-xs text-gray-600">存储大小</span>
-                    <span class="text-sm font-medium text-gray-900">{{ formatFileSize(selectedKnowledgeBase.size) }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ formatFileSize(selectedKnowledgeBase.size ?? 0) }}</span>
                   </div>
                   <div class="flex justify-between items-center py-2">
                     <span class="text-xs text-gray-600">创建时间</span>
-                    <span class="text-sm font-medium text-gray-900">{{ formatDate(selectedKnowledgeBase.created_at) }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ formatDate(selectedKnowledgeBase.create_time) }}</span>
                   </div>
                   <div class="flex justify-between items-center py-2">
                     <span class="text-xs text-gray-600">更新时间</span>
-                    <span class="text-sm font-medium text-gray-900">{{ formatDate(selectedKnowledgeBase.updated_at) }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ formatDate(selectedKnowledgeBase.update_time) }}</span>
                   </div>
                 </div>
               </div>
@@ -1084,10 +1084,10 @@ const showEditModal = ref(false)
 const showSettingsModal = ref(false)
 
 // 表单数据
-const newKnowledgeBase = ref<CreateKnowledgeBaseRequest>({
+const newKnowledgeBase = ref({
   name: '',
   description: '',
-  index_type: 'vector' // 默认选择向量索引
+  index_type: 'vector' as 'vector' | 'knowledge_graph' | 'long_document'
 })
 
 const editingKnowledgeBase = ref<UpdateKnowledgeBaseRequest>({
@@ -1143,12 +1143,12 @@ const filteredKnowledgeBases = computed(() => {
   const query = knowledgeBaseSearchQuery.value.toLowerCase()
   return knowledgeBases.value.filter(kb =>
       kb.name.toLowerCase().includes(query) ||
-      kb.description.toLowerCase().includes(query)
+      (kb.description?.toLowerCase().includes(query) ?? false)
   )
 })
 
 const totalDocuments = computed(() => {
-  return knowledgeBases.value.reduce((total, kb) => total + kb.document_count, 0)
+  return knowledgeBases.value.reduce((total, kb) => total + (kb.document_count ?? 0), 0)
 })
 
 const displayedData = computed(() => {
@@ -1324,26 +1324,32 @@ const createKnowledgeBase = async () => {
 
   isCreating.value = true
   try {
-    const response = await createKnowledgeBaseAPI(newKnowledgeBase.value)
+    const requestData: CreateKnowledgeBaseRequest = {
+      name: newKnowledgeBase.value.name,
+      description: newKnowledgeBase.value.description,
+      initial_settings: {
+        index_type: newKnowledgeBase.value.index_type
+      }
+    }
+    const response = await createKnowledgeBaseAPI(requestData)
     if (response.success) {
       showCreateModal.value = false
       
-      // 显示成功信息
       const indexTypeNames = {
         'vector': '向量索引',
         'knowledge_graph': '知识图谱索引', 
         'long_document': '长文档索引'
       }
-      const typeName = indexTypeNames[newKnowledgeBase.value.index_type as keyof typeof indexTypeNames] || '向量索引'
-      console.log(`知识库"${newKnowledgeBase.value.name}"创建成功！类型：${typeName}`)
+      const typeName = indexTypeNames[newKnowledgeBase.value.index_type] || '向量索引'
       
       newKnowledgeBase.value = {name: '', description: '', index_type: 'vector'}
       await refreshKnowledgeBases()
       
-      // 为新创建的知识库设置类型信息
       if (response.data && response.data.id) {
         knowledgeBaseTypes.value.set(response.data.id, newKnowledgeBase.value.index_type || 'vector')
       }
+      
+      showAlert(`知识库"${requestData.name}"创建成功！类型：${typeName}`, '成功', 'success')
     }
   } catch (error) {
     console.error('创建知识库失败:', error)
@@ -1439,31 +1445,24 @@ const selectKnowledgeBase = async (kb: KnowledgeBase) => {
 const openKnowledgeBaseSettings = async (kb: KnowledgeBase) => {
   settingsKnowledgeBaseId.value = kb.id
 
-  try {
-    // 尝试加载现有设置
-    const response = await KnowledgeAPI.getKnowledgeBaseSettings(kb.id)
-    if (response.success && response.data) {
-      knowledgeBaseSettings.value = response.data
-    } else {
-      // 如果没有现有设置，使用默认值
-      knowledgeBaseSettings.value = {
-        chunk_size: 1000,
-        chunk_overlap: 100,
-        text_split_strategy: 'fixed_chars',
-        split_chars: ['\n\n', '\n', '。', '！', '？', ';', '；'],
-        index_type: 'vector'
-      }
-    }
-  } catch (error) {
-    console.error('加载知识库设置失败:', error)
-    // 使用默认设置
+  const defaultSettings: KnowledgeBaseSettings = {
+    chunk_size: 1000,
+    chunk_overlap: 200,
+    text_split_strategy: 'fixed_chars',
+    split_chars: ['\n\n', '\n', '。', '！', '？', '；'],
+    index_type: 'vector'
+  }
+
+  if (kb.settings && Object.keys(kb.settings).length > 0) {
     knowledgeBaseSettings.value = {
-      chunk_size: 1000,
-      chunk_overlap: 100,
-      text_split_strategy: 'fixed_chars',
-      split_chars: ['\n\n', '\n', '。', '！', '？', ';', '；'],
-      index_type: 'vector'
+      chunk_size: kb.settings.chunk_size ?? defaultSettings.chunk_size,
+      chunk_overlap: kb.settings.chunk_overlap ?? defaultSettings.chunk_overlap,
+      text_split_strategy: (kb.settings.text_split_strategy as 'fixed_chars' | 'semantic') ?? defaultSettings.text_split_strategy,
+      split_chars: kb.settings.split_chars ?? defaultSettings.split_chars,
+      index_type: (kb.settings.index_type as 'vector' | 'knowledge_graph' | 'long_document') ?? defaultSettings.index_type
     }
+  } else {
+    knowledgeBaseSettings.value = { ...defaultSettings }
   }
 
   showSettingsModal.value = true
@@ -1871,7 +1870,8 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
 }
 

@@ -5,11 +5,12 @@ import uvicorn
 from contextlib import asynccontextmanager
 
 from ai_platform.api.auth import router as auth_router
+from ai_platform.api.knowledge import router as knowledge_router
 from ai_platform.config.setting import settings
 from ai_platform.config.swagger_config import setup_swagger, SWAGGER_CONFIG
 from fastapi.middleware.cors import CORSMiddleware
 from ai_platform.models.user import user_manager
-
+from ai_platform.services.konwledge_service import knowledge_service
 # 配置日志
 logger.remove()
 logger.add(
@@ -18,7 +19,6 @@ logger.add(
     level=settings.log_level
 )
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
@@ -26,13 +26,13 @@ async def lifespan(app: FastAPI):
 
     # 初始化数据库表
     await user_manager.init_tables()  # ← 添加 await
+    await knowledge_service.init_knowledge_tables()  # ← 添加 await
 
     logger.info("应用启动完成")
     yield  # ← 必须有 yield
 
     # 关闭时的清理工作（可选）
     logger.info("应用关闭中...")
-
 
 # 创建应用
 app = FastAPI(
@@ -51,6 +51,7 @@ setup_swagger(app)
 
 # 注册路由
 app.include_router(auth_router, prefix="/users")
+app.include_router(knowledge_router, prefix="/knowledge")
 
 # CORS 配置
 app.add_middleware(
@@ -71,6 +72,7 @@ def main():
     uvicorn.run(
         "ai_platform.main:app",
         port=8000,
+        host="0.0.0.0",
         # reload=settings.debug,
         # log_level=settings.log_level.lower()
     )

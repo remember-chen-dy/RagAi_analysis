@@ -16,6 +16,8 @@ class Setting(PydanticBaseSettings):
     postgres_user: str = Field(default="remember", description="PostgreSQL用户名")
     postgres_password: str = Field(default="ServBay.dev", description="PostgreSQL密码")
 
+    #知识库默认配置
+    
 
     #获取数据库配置
     @property

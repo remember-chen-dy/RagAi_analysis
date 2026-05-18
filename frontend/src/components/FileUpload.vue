@@ -208,18 +208,12 @@ const loadKnowledgeBases = async () => {
     isLoadingKnowledgeBases.value = true
     const response = await UploadAPI.getKnowledgeBases()
 
-    // 调试日志
-    console.log('API响应:', response)
-
-    // 检查响应格式并获取知识库数据
     if (response.success && response.data) {
-      knowledgeBases.value = response.data.knowledge_bases || []
+      knowledgeBases.value = response.data
     } else {
       knowledgeBases.value = []
-      console.warn('知识库数据格式异常:', response)
     }
 
-    // 自动选择最后选择的知识库，如果没有则选择第一个
     if (knowledgeBases.value.length > 0 && !selectedKnowledgeBase.value) {
       const lastSelectedId = localStorage.getItem('lastSelectedKnowledgeBase')
 

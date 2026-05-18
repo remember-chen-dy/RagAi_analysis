@@ -7,13 +7,13 @@ import { API_BASE_URL } from '@/config'
 export interface KnowledgeBase {
   id: string
   name: string
-  description: string
-  created_at: string
-  updated_at: string
-  document_count: number
-  size: number
-  status: 'active' | 'inactive' | 'building'
-  metadata?: Record<string, any>
+  description?: string
+  status: string
+  settings?: Record<string, any>
+  create_time: string
+  update_time?: string
+  document_count?: number
+  size?: number
 }
 
 // 知识库文档类型
@@ -29,6 +29,14 @@ export interface KnowledgeDocument {
 }
 
 // API响应类型
+export interface ApiResponse<T = any> {
+  success: boolean
+  code: number
+  message: string
+  data?: T
+  timestamp: string
+}
+
 export interface KnowledgeBaseResponse {
   success: boolean
   message: string
@@ -37,8 +45,10 @@ export interface KnowledgeBaseResponse {
 
 export interface KnowledgeBaseListResponse {
   success: boolean
+  code: number
+  message: string
   data: KnowledgeBase[]
-  total: number
+  timestamp: string
 }
 
 export interface KnowledgeDocumentListResponse {
@@ -50,14 +60,11 @@ export interface KnowledgeDocumentListResponse {
 // 创建知识库请求
 export interface CreateKnowledgeBaseRequest {
   name: string
-  description: string
-  metadata?: Record<string, any>
-  // 初始设置
-  index_type?: 'vector' | 'knowledge_graph' | 'long_document'
-  settings?: {
+  description?: string
+  initial_settings?: {
     chunk_size?: number
     chunk_overlap?: number
-    text_split_strategy?: 'fixed_chars' | 'semantic'
+    text_split_strategy?: string
     split_chars?: string[]
     index_type?: 'vector' | 'knowledge_graph' | 'long_document'
   }
@@ -89,11 +96,8 @@ export interface KnowledgeBaseSettingsResponse {
 
 
 // 获取知识库列表
-export const getKnowledgeBases = async (limit: number = 50, offset: number = 0, status?: string): Promise<KnowledgeBaseListResponse> => {
-  const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
-  if (status) params.append('status', status)
-
-  const response = await fetch(`${API_BASE_URL}/api/knowledge/bases?${params}`, {
+export const getKnowledgeBases = async (): Promise<KnowledgeBaseListResponse> => {
+  const response = await fetch(`${API_BASE_URL}/knowledge/list`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -129,7 +133,7 @@ export const getKnowledgeBase = async (kbId: string): Promise<KnowledgeBaseRespo
 
 // 创建知识库
 export const createKnowledgeBase = async (data: CreateKnowledgeBaseRequest): Promise<KnowledgeBaseResponse> => {
-  const response = await fetch(`${API_BASE_URL}/api/knowledge/bases`, {
+  const response = await fetch(`${API_BASE_URL}/knowledge/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -148,7 +152,7 @@ export const createKnowledgeBase = async (data: CreateKnowledgeBaseRequest): Pro
 
 // 更新知识库
 export const updateKnowledgeBase = async (kbId: string, data: UpdateKnowledgeBaseRequest): Promise<KnowledgeBaseResponse> => {
-  const response = await fetch(`${API_BASE_URL}/api/knowledge/bases/${kbId}`, {
+  const response = await fetch(`${API_BASE_URL}/knowledge/update/${kbId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -167,7 +171,7 @@ export const updateKnowledgeBase = async (kbId: string, data: UpdateKnowledgeBas
 
 // 删除知识库
 export const deleteKnowledgeBase = async (kbId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/knowledge/bases/${kbId}`, {
+  const response = await fetch(`${API_BASE_URL}/knowledge/delete/${kbId}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -386,13 +390,16 @@ export class KnowledgeAPI {
    */
   static async updateKnowledgeBaseSettings(id: string, settings: KnowledgeBaseSettings): Promise<KnowledgeBaseSettingsResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/knowledge/bases/${id}/settings`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/knowledge/update_settings`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          knowledge_base_id: id,
+          settings: settings
+        }),
       })
 
       if (!response.ok) {
