@@ -149,12 +149,12 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref, watch} from 'vue'
-import type {FileInfo, UploadFile} from '../types'
+import type {UploadFile} from '../types'
 import { UploadAPI } from '../api/upload'
 
 // 定义 emits
 const emit = defineEmits<{
-  'files-updated': [files: FileInfo[]]
+  'files-updated': []
 }>()
 
 // 响应式数据
@@ -356,7 +356,7 @@ const uploadSingleFile = async (file: UploadFile) => {
       showMessage(`文件 "${file.name}" 上传成功并已加入知识库`, 'success')
 
       // 通知父组件文件已更新
-      emit('files-updated', [])
+      emit('files-updated')
     } else {
       throw new Error(response.message || '上传失败')
     }

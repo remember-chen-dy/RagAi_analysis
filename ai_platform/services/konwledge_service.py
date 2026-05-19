@@ -11,6 +11,18 @@ from ai_platform.config.resource import create_engine
 from pydantic import BaseModel, Field
 from uuid import UUID
 from sqlalchemy import delete, update
+from fastapi import HTTPException
+class KnowledgeBaseFileCreate(BaseModel):
+    """知识库文件创建模型"""
+    knowledge_base_id: UUID = Field(description="知识库ID")
+    file_path: str = Field(description="文件路径")
+    original_filename: str = Field(description="原始文件名")
+    file_size: int = Field(description="文件大小")
+    file_type: str = Field(description="文件类型")
+    mime_type: str = Field(description="文件MIME类型")
+    filename: str = Field(description="文件名")
+
+
 
 
 class KnowledgeService:
@@ -126,6 +138,65 @@ class KnowledgeService:
                 return knowledge_base
         except Exception as e:
             logger.exception(f"修改知识库设置失败: {e}")
+            raise
+    
+    #获取知识库详情
+    async def get_knowledge_base_detail(self, knowledge_base_id: UUID):
+        """获取知识库详情"""
+        try:
+            await self._get_engine()
+            async with AsyncSession(self.engine) as session:
+                knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
+                if knowledge_base is None:
+                    raise HTTPException(status_code=400, detail={
+                        "message": "知识库不存在",
+                        "code": 400
+                    })
+                return knowledge_base
+        except Exception as e:
+            logger.exception(f"获取知识库详情失败: {e}")
+            raise
+
+    #文件管理
+    async def create_file_record(self, file_create: KnowledgeBaseFileCreate):
+        """创建文件记录"""
+        try:
+            await self._get_engine()
+            async with AsyncSession(self.engine) as session:
+                new_file_record = KnowledgeBaseFile(
+                    id=str(uuid.uuid4()),
+                    knowledge_base_id=file_create.knowledge_base_id,
+                    original_filename=file_create.original_filename,
+                    file_path=file_create.file_path,
+                    filename=file_create.filename,
+                    file_size=file_create.file_size,
+                    file_type=file_create.file_type,
+                    mime_type=file_create.mime_type,
+                )
+                session.add(new_file_record)
+                await session.commit()
+                session.refresh(new_file_record)
+                return new_file_record
+        except Exception as e:
+            logger.exception(f"创建文件记录失败: {e}")
+            raise
+
+    #删除文件记录
+    async def delete_file_record(self, object_name: str):
+        """删除文件记录"""
+        try:
+            await self._get_engine()
+            async with AsyncSession(self.engine) as session:
+                smt=select(KnowledgeBaseFile).where(KnowledgeBaseFile.file_path == object_name)
+                result = await session.execute(smt)
+                file_record = result.scalar()
+                if file_record is None:
+                    raise ValueError(f"文件记录 {object_name} 不存在")
+                await session.delete(file_record)
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.exception(f"删除文件记录失败: {e}")
             raise
 
 

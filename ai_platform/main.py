@@ -1,11 +1,13 @@
 import sys
 from loguru import logger
-from fastapi import FastAPI
 import uvicorn
 from contextlib import asynccontextmanager
-
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, HTTPException
 from ai_platform.api.auth import router as auth_router
 from ai_platform.api.knowledge import router as knowledge_router
+from ai_platform.api.upload import router as upload_router
 from ai_platform.config.setting import settings
 from ai_platform.config.swagger_config import setup_swagger, SWAGGER_CONFIG
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,6 +54,7 @@ setup_swagger(app)
 # 注册路由
 app.include_router(auth_router, prefix="/users")
 app.include_router(knowledge_router, prefix="/knowledge")
+app.include_router(upload_router, prefix="/files")
 
 # CORS 配置
 app.add_middleware(

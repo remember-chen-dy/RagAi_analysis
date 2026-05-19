@@ -17,8 +17,13 @@ class Setting(PydanticBaseSettings):
     postgres_password: str = Field(default="ServBay.dev", description="PostgreSQL密码")
 
     #知识库默认配置
+    #Minio配置
+    minio_endpoint: str = Field(default="192.168.1.5:9000", description="Minio端点")
+    minio_access_key: str = Field(default="minioadmin", description="Minio访问密钥")
+    minio_secret_key: str = Field(default="minioadmin", description="Minio秘密密钥")
+    minio_secure: bool = Field(default=False, description="Minio是否使用HTTPS")
+    minio_bucket: str = Field(default="remember", description="Minio存储桶")
     
-
     #获取数据库配置
     @property
     def async_postgres_url(self) -> str:

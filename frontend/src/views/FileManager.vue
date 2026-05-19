@@ -228,15 +228,15 @@
     <Transition name="modal">
       <div
         v-if="showPreview && previewFile"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        class="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm"
         @click="closePreview"
       >
         <div
-          class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+          class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden"
           @click.stop
         >
           <!-- 预览头部 -->
-          <div class="flex items-center justify-between p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
             <div>
               <h3 class="text-lg font-medium text-gray-900">{{ getFileName(previewFile.object_name) }}</h3>
               <p class="text-sm text-gray-500 mt-1">{{ formatFileSize(previewFile.size) }} • {{ formatDate(previewFile.last_modified) }}</p>
@@ -252,7 +252,7 @@
           </div>
 
           <!-- 预览内容 -->
-          <div class="p-6 overflow-auto max-h-[70vh]">
+          <div class="flex-1 min-h-0 overflow-y-auto p-6 modal-scroll">
             <!-- 加载中状态 -->
             <div v-if="isLoadingPreview" class="text-center py-16">
               <div class="inline-flex items-center space-x-3 text-gray-500">
@@ -296,12 +296,20 @@
               </div>
             </div>
 
+            <!-- Markdown 文件预览 -->
+            <div v-else-if="isMarkdown" class="bg-white rounded-lg">
+              <div v-if="previewContent" class="markdown-body p-4 overflow-auto max-h-96"
+                   v-html="previewContent">
+              </div>
+              <div v-else class="text-center py-8 text-gray-500">
+                Markdown 内容加载失败
+              </div>
+            </div>
+
             <!-- 文本文件预览 -->
             <div v-else-if="getFileType(getFileName(previewFile.object_name)) === 'text'" class="bg-gray-50 rounded-lg p-4">
               <div v-if="previewContent" class="relative">
-                <div class="absolute top-2 right-2 text-xs text-gray-400">
-                  {{ getFileName(previewFile.object_name).endsWith('.md') ? 'Markdown' : 'Text' }}
-                </div>
+                <div class="absolute top-2 right-2 text-xs text-gray-400">Text</div>
                 <pre class="text-sm text-gray-800 whitespace-pre-wrap overflow-auto max-h-96 pt-6">{{ previewContent }}</pre>
               </div>
               <div v-else class="text-center py-8 text-gray-500">
@@ -328,7 +336,7 @@
           </div>
 
           <!-- 预览底部操作 -->
-          <div class="p-6 border-t border-gray-100 flex justify-end space-x-3">
+          <div class="p-6 border-t border-gray-100 flex justify-end space-x-3 flex-shrink-0">
             <button
               @click="downloadFile(previewFile.object_name)"
               class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
@@ -391,6 +399,8 @@
   import FileUpload from '@/components/FileUpload.vue'
   import AnalyticsView from '@/components/AnalyticsView.vue'
   import UploadAPI from '@/api/upload'
+  import { Modal } from 'ant-design-vue'
+  import { marked } from 'marked'
   import type { FileInfo } from '@/types'
 
   // 响应式数据
@@ -405,15 +415,15 @@
   const showPreview = ref(false)
   const previewUrl = ref<string>('')
   const previewContent = ref<string>('')
+  const isMarkdown = ref(false)
   const isLoadingPreview = ref(false)
 
   // 消息提示
   const message = ref({ text: '', type: 'info' })
 
   // 事件处理
-  const handleFilesUpdate = (data: any) => {
-    uploadedFilesCount.value = data.count || 0
-    totalStorageSize.value = data.totalSize || '0 MB'
+  const handleFilesUpdate = () => {
+    refreshFiles()
   }
 
   // 工具函数
@@ -431,7 +441,9 @@
       return 'image'
     } else if (['pdf'].includes(extension || '')) {
       return 'pdf'
-    } else if (['txt', 'md'].includes(extension || '')) {
+    } else if (extension === 'md') {
+      return 'md'
+    } else if (['txt'].includes(extension || '')) {
       return 'text'
     } else if (['mp4', 'webm', 'ogg'].includes(extension || '')) {
       return 'video'
@@ -471,20 +483,28 @@
     isLoadingPreview.value = true
     previewUrl.value = ''
     previewContent.value = ''
+    isMarkdown.value = false
 
     try {
       const fileType = getFileType(fileName)
+      const isMd = fileName.toLowerCase().endsWith('.md')
 
       switch (fileType) {
         case 'image':
         case 'pdf':
-          // 获取图片和PDF的预览URL
           previewUrl.value = await UploadAPI.getPreviewUrl(file.object_name)
           break
 
         case 'text':
-          // 获取文本内容
-          previewContent.value = await UploadAPI.getTextContent(file.object_name)
+          {
+            const rawText = await UploadAPI.getTextContent(file.object_name)
+            if (isMd) {
+              previewContent.value = await marked.parse(rawText)
+              isMarkdown.value = true
+            } else {
+              previewContent.value = rawText
+            }
+          }
           break
 
         default:
@@ -503,6 +523,7 @@
     previewFile.value = null
     previewUrl.value = ''
     previewContent.value = ''
+    isMarkdown.value = false
     isLoadingPreview.value = false
   }
 
@@ -557,21 +578,26 @@
     }
   }
 
-  const deleteFile = async (objectName: string) => {
-    if (!confirm('确定要删除这个文件吗？')) {
-      return
-    }
-
-    try {
-      const response = await UploadAPI.deleteFile(objectName)
-      if (response.success) {
-        showMessage('文件删除成功', 'success')
-        await refreshFiles()
+  const deleteFile = (objectName: string) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除这个文件吗？此操作不可撤销。',
+      okText: '确定删除',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const response = await UploadAPI.deleteFile(objectName)
+          if (response.success) {
+            showMessage('文件删除成功', 'success')
+            await refreshFiles()
+          }
+        } catch (error) {
+          console.error('删除文件失败:', error)
+          showMessage('删除文件失败', 'error')
+        }
       }
-    } catch (error) {
-      console.error('删除文件失败:', error)
-      showMessage('删除文件失败', 'error')
-    }
+    })
   }
 
   // 生命周期
@@ -581,6 +607,46 @@
 </script>
 
 <style scoped>
+.modal-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+.markdown-body {
+  line-height: 1.7;
+  color: #1f2937;
+}
+
+.markdown-body :deep(h1) { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+.markdown-body :deep(h2) { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e5e7eb; }
+.markdown-body :deep(h3) { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; }
+.markdown-body :deep(p) { margin: 0.5rem 0; }
+.markdown-body :deep(ul), .markdown-body :deep(ol) { padding-left: 1.5rem; margin: 0.5rem 0; }
+.markdown-body :deep(li) { margin: 0.15rem 0; }
+.markdown-body :deep(code) { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.85rem; font-family: ui-monospace, monospace; }
+.markdown-body :deep(pre) { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.75rem 0; }
+.markdown-body :deep(pre code) { background: none; padding: 0; color: inherit; font-size: 0.85rem; }
+.markdown-body :deep(blockquote) { border-left: 3px solid #d1d5db; padding-left: 1rem; margin: 0.5rem 0; color: #6b7280; }
+.markdown-body :deep(a) { color: #3b82f6; text-decoration: underline; }
+.markdown-body :deep(table) { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
+.markdown-body :deep(th), .markdown-body :deep(td) { border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left; }
+.markdown-body :deep(th) { background: #f9fafb; font-weight: 600; }
+.markdown-body :deep(hr) { border: none; border-top: 1px solid #e5e7eb; margin: 1rem 0; }
+.markdown-body :deep(strong) { font-weight: 600; }
+.markdown-body :deep(img) { max-width: 100%; border-radius: 0.5rem; }
+
 /* 自定义动画 */
 @keyframes float {
   0%, 100% {

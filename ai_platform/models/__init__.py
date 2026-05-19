@@ -41,7 +41,7 @@ class KnowledgeBaseFile(Base):
     original_filename = mapped_column(String(255), nullable=False,comment="原始文件名")
     file_path = mapped_column(String(512), nullable=False,comment="文件路径")
     file_size = mapped_column(BigInteger, nullable=False,comment="文件大小")
-    file_type = mapped_column(String(50), nullable=False,comment="文件类型")
+    file_type = mapped_column(String(100), nullable=False,comment="文件类型")
     mime_type = mapped_column(String(100), nullable=True,comment="文件MIME类型")
     #文件元数据
     file_metadata = mapped_column(JSON, nullable=True, default=dict,comment="文件元数据")
