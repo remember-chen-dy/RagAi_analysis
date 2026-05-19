@@ -1,0 +1,15 @@
+services:
+  minio:
+    container_name: minio
+    image: quay.io/minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /Users/remember/minio-data:/data      # ← 使用 /Users/remember/minio-data 前缀，绑定到本地目录
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    # 不需要 networks 和 volumes 定义
