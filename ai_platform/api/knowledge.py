@@ -132,3 +132,23 @@ async def update_knowledge_base_settings(request: UpdateKnowledgeBaseSettingsReq
         data={},
         timestamp=datetime.datetime.now()
     )
+
+
+@router.post("/build/{knowledge_base_id}", response_model=ApiResponse[Any])
+async def build_knowledge_base(knowledge_base_id: UUID):
+    """构建知识库"""
+    try:
+        result = await knowledge_service.build_knowledge_base(knowledge_base_id)
+
+        
+        return ApiResponse(
+            success=True,
+            code=200,
+            message=f"知识库构建完成，共处理 {result['file_count']} 个文件",
+            data=result,
+            timestamp=datetime.datetime.now()
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"知识库构建失败: {str(e)}")

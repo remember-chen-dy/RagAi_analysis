@@ -126,4 +126,24 @@ class MinioService:
             logger.error(f"文件删除失败: {e}")
             return False
 
+    async def read_file(self, bucket_name: str, object_name: str) -> Optional[bytes]:
+        """
+        读取文件内容
+        """
+        try:
+            response = self.client.get_object(
+                bucket_name=bucket_name,
+                object_name=object_name
+            )
+            # 读取所有数据
+            file_data = response.read()
+            response.close()
+            response.release_conn()
+
+            logger.info(f"文件读取成功: {object_name}")
+            return file_data
+
+        except S3Error as e:
+            logger.exception(f"文件读取失败: {e}")
+            return None
 minio_service = MinioService()

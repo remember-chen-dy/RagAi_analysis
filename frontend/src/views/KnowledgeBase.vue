@@ -148,33 +148,45 @@
                 <div class="flex items-center justify-between text-xs"
                      :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-400' : 'text-gray-400'">
                   <span>{{ kb.document_count ?? 0 }} 个文档</span>
-                  <div class="flex items-center space-x-2">
-                    <span>{{ formatDate(kb.update_time) }}</span>
-                    <!-- 操作按钮 -->
-                    <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                  <div class="flex items-center space-x-0.5">
+                    <a-tooltip title="构建知识库">
+                      <span
+                        v-if="kb.status !== 'active'"
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
+                        :class="buildingKnowledgeBaseIds.has(kb.id) ? 'pointer-events-none' : ''"
+                        @click.stop="buildKnowledgeBase(kb, $event)"
+                      >
+                        <svg v-if="!buildingKnowledgeBaseIds.has(kb.id)" class="w-3.5 h-3.5 text-gray-400 hover:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <svg v-else class="w-3.5 h-3.5 animate-spin text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                      </span>
+                    </a-tooltip>
+                    <a-tooltip title="编辑知识库">
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
+                        :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-300 hover:text-white hover:bg-white/10' : 'text-gray-400 hover:text-gray-600'"
                         @click.stop="editKnowledgeBase(kb)"
-                        class="p-1 rounded hover:bg-gray-100 hover:bg-opacity-20 transition-colors"
-                        :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-300 hover:text-white' : 'text-gray-400 hover:text-gray-600'"
-                        title="编辑知识库"
                       >
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
-                      </button>
-                      <button
+                      </span>
+                    </a-tooltip>
+                    <a-tooltip title="删除知识库">
+                      <span
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full cursor-pointer hover:bg-red-50 transition-colors"
+                        :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-300 hover:text-red-300 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500'"
                         @click.stop="deleteKnowledgeBase(kb)"
-                        class="p-1 rounded hover:bg-red-100 hover:bg-opacity-20 transition-colors"
-                        :class="selectedKnowledgeBase?.id === kb.id ? 'text-gray-300 hover:text-red-300' : 'text-gray-400 hover:text-red-600'"
-                        title="删除知识库"
                       >
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
-                      </button>
-                    </div>
+                      </span>
+                    </a-tooltip>
                   </div>
                 </div>
               </div>
@@ -536,523 +548,270 @@
     </main>
 
     <!-- 创建知识库模态框 -->
-    <div v-if="showCreateModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
-        <!-- 固定标题区域 -->
-        <div class="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
-          <h3 class="text-xl font-medium text-gray-900">创建新知识库</h3>
-          <button
-              @click="showCreateModal = false"
-              class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- 滚动内容区域 -->
-        <div class="flex-1 overflow-y-auto p-6 modal-scroll">
+    <a-modal
+      :open="showCreateModal"
+      title="创建新知识库"
+      width="640px"
+      @cancel="showCreateModal = false"
+      @ok="createKnowledgeBase"
+      :confirmLoading="isCreating"
+      okText="创建知识库"
+      cancelText="取消"
+    >
         <form @submit.prevent="createKnowledgeBase">
-          <div class="space-y-6">
+          <div class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">名称</label>
-              <input
-                  v-model="newKnowledgeBase.name"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors"
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">名称</label>
+              <a-input
+                  v-model:value="newKnowledgeBase.name"
                   placeholder="输入知识库名称"
+                  size="large"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">描述</label>
-              <textarea
-                  v-model="newKnowledgeBase.description"
-                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors resize-none"
-                  rows="4"
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">描述</label>
+              <a-textarea
+                  v-model:value="newKnowledgeBase.description"
+                  :rows="4"
                   placeholder="输入知识库描述"
-              ></textarea>
+              />
             </div>
-            
-            <!-- 知识库类型选择 -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-4">知识库类型</label>
-              <div class="grid grid-cols-1 gap-4">
-                <label class="relative cursor-pointer">
-                  <input
-                      v-model="newKnowledgeBase.index_type"
-                      type="radio"
-                      value="vector"
-                      class="sr-only"
-                  />
-                  <div
-                      class="border-2 rounded-lg p-4 transition-all duration-200"
-                      :class="newKnowledgeBase.index_type === 'vector' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                  >
-                    <div class="flex items-start space-x-3">
-                      <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5"
-                           :class="newKnowledgeBase.index_type === 'vector' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                        <div v-if="newKnowledgeBase.index_type === 'vector'"
-                             class="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div class="flex-1">
-                        <h5 class="font-medium text-gray-900 mb-1">常规向量索引</h5>
-                        <p class="text-sm text-gray-600">
-                          使用向量嵌入技术构建索引，适用于大多数文档检索场景，检索速度快，准确性高。推荐用于一般的问答和文档搜索。
-                        </p>
-                      </div>
-                    </div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">知识库类型</label>
+              <div class="grid grid-cols-3 gap-3 w-full">
+                <div
+                  class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
+                  :class="newKnowledgeBase.index_type === 'vector' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
+                  @click="newKnowledgeBase.index_type = 'vector'"
+                >
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+                       :class="newKnowledgeBase.index_type === 'vector' ? 'bg-blue-100' : 'bg-gray-100'">
+                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'vector' ? 'text-blue-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
                   </div>
-                </label>
-
-                <label class="relative cursor-pointer">
-                  <input
-                      v-model="newKnowledgeBase.index_type"
-                      type="radio"
-                      value="knowledge_graph"
-                      class="sr-only"
-                  />
-                  <div
-                      class="border-2 rounded-lg p-4 transition-all duration-200"
-                      :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                  >
-                    <div class="flex items-start space-x-3">
-                      <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5"
-                           :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                        <div v-if="newKnowledgeBase.index_type === 'knowledge_graph'"
-                             class="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div class="flex-1">
-                        <h5 class="font-medium text-gray-900 mb-1">知识图谱索引</h5>
-                        <p class="text-sm text-gray-600">
-                          构建实体关系图谱，适用于需要理解实体间关系的复杂查询场景，支持推理查询。适合结构化数据和关系分析。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </label>
-
-                <label class="relative cursor-pointer">
-                  <input
-                      v-model="newKnowledgeBase.index_type"
-                      type="radio"
-                      value="long_document"
-                      class="sr-only"
-                  />
-                  <div
-                      class="border-2 rounded-lg p-4 transition-all duration-200"
-                      :class="newKnowledgeBase.index_type === 'long_document' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                  >
-                    <div class="flex items-start space-x-3">
-                      <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5"
-                           :class="newKnowledgeBase.index_type === 'long_document' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                        <div v-if="newKnowledgeBase.index_type === 'long_document'"
-                             class="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div class="flex-1">
-                        <h5 class="font-medium text-gray-900 mb-1">长文档索引</h5>
-                        <p class="text-sm text-gray-600">
-                          专为长文档优化的检索索引，保持上下文连续性，适用于学术论文、技术文档、书籍等长内容的分析和检索。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </label>
-              </div>
-              
-              <!-- 提示信息 -->
-              <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div class="flex items-start space-x-3">
-                  <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  <div>
-                    <h5 class="text-sm font-medium text-blue-900 mb-1">选择建议</h5>
-                    <p class="text-sm text-blue-800">
-                      • <strong>向量索引</strong>：适合日常文档问答，响应快速<br>
-                      • <strong>知识图谱</strong>：适合需要关系分析的复杂查询<br>
-                      • <strong>长文档索引</strong>：适合学术论文、技术文档等长内容
-                    </p>
-                  </div>
+                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'vector' ? 'text-blue-700' : 'text-gray-800'">常规向量索引</span>
+                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'vector' ? 'text-blue-600' : 'text-gray-500'">基于 Embedding 向量嵌入构建语义索引，支持高维相似度检索，适用于文档问答与语义搜索场景</span>
                 </div>
-              </div>
+                <div
+                  class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
+                  :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'border-purple-500 bg-purple-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
+                  @click="newKnowledgeBase.index_type = 'knowledge_graph'"
+                >
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+                       :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'bg-purple-100' : 'bg-gray-100'">
+                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                  </div>
+                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-700' : 'text-gray-800'">知识图谱索引</span>
+                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-600' : 'text-gray-500'">自动抽取实体与关系构建知识图谱，支持多跳推理与关联查询，适用于结构化数据分析场景</span>
+                </div>
+                <div
+                  class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
+                  :class="newKnowledgeBase.index_type === 'long_document' ? 'border-green-500 bg-green-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
+                  @click="newKnowledgeBase.index_type = 'long_document'"
+                >
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+                       :class="newKnowledgeBase.index_type === 'long_document' ? 'bg-green-100' : 'bg-gray-100'">
+                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  </div>
+                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-700' : 'text-gray-800'">长文档索引</span>
+                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-600' : 'text-gray-500'">采用层次化分块与上下文窗口保持策略，确保长文本语义完整性，适用于论文与书籍分析</span>
+                </div>
+              </div>  
             </div>
-          </div>
-
-          <div class="flex items-center justify-end space-x-4 mt-8">
-            <button
-                type="button"
-                @click="showCreateModal = false"
-                class="px-6 py-2.5 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              取消
-            </button>
-            <button
-                type="submit"
-                :disabled="isCreating"
-                class="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              {{ isCreating ? '创建中...' : '创建知识库' }}
-            </button>
-          </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- 编辑知识库模态框 -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-medium text-gray-900">编辑知识库</h3>
-          <button
-              @click="showEditModal = false"
-              class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <form @submit.prevent="updateKnowledgeBase">
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">名称</label>
-              <input
-                  v-model="editingKnowledgeBase.name"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors"
-                  placeholder="输入知识库名称"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">描述</label>
-              <textarea
-                  v-model="editingKnowledgeBase.description"
-                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors resize-none"
-                  rows="4"
-                  placeholder="输入知识库描述"
-              ></textarea>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end space-x-4 mt-8">
-            <button
-                type="button"
-                @click="showEditModal = false"
-                class="px-6 py-2.5 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              取消
-            </button>
-            <button
-                type="submit"
-                :disabled="isUpdating"
-                class="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              {{ isUpdating ? '更新中...' : '更新知识库' }}
-            </button>
           </div>
         </form>
-      </div>
-    </div>
+    </a-modal>
+      
+    <!-- 编辑知识库模态框 -->
+    <a-modal
+      :open="showEditModal"
+      title="编辑知识库"
+      width="480px"
+      @cancel="showEditModal = false"
+      @ok="updateKnowledgeBase"
+      :confirmLoading="isUpdating"
+      okText="更新知识库"
+      cancelText="取消"
+    >
+        <form @submit.prevent="updateKnowledgeBase">
+          <div class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">名称</label>
+              <a-input
+                  v-model:value="editingKnowledgeBase.name"
+                  placeholder="输入知识库名称"
+                  size="large"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">描述</label>
+              <a-textarea
+                  v-model:value="editingKnowledgeBase.description"
+                  :rows="4"
+                  placeholder="输入知识库描述"
+              />
+            </div>
+          </div>
+        </form>
+    </a-modal>
+    
+    <!-- 知识库设置抽屉 -->
+    <a-drawer
+      :open="showSettingsModal"
+      title="知识库设置"
+      placement="right"
+      :width="520"
+      @close="showSettingsModal = false"
+    >
+      <form @submit.prevent="saveKnowledgeBaseSettings" class="flex flex-col h-full">
+        <div class="flex-1 space-y-6">
 
-    <!-- 知识库设置模态框 -->
-    <Teleport to="body">
-      <Transition name="drawer" appear>
-        <div v-if="showSettingsModal" class="fixed inset-0 z-50 overflow-hidden">
-          <!-- 背景遮罩 -->
-          <div class="absolute inset-0 overflow-hidden">
-            <div class="absolute inset-0 bg-black bg-opacity-50" @click="showSettingsModal = false"></div>
-
-            <!-- 抽屉容器 -->
-            <section class="absolute inset-y-0 right-0 pl-10 max-w-full flex">
-              <div class="relative w-screen max-w-2xl">
-                <div class="h-full flex flex-col bg-white shadow-xl overflow-y-scroll">
-                  <!-- 模态框头部 -->
-                  <div class="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-                    <h3 class="text-xl font-medium text-gray-900">知识库设置</h3>
-                    <button
-                        @click="showSettingsModal = false"
-                        class="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <!-- 模态框内容区域 -->
-                  <div class="flex-1 overflow-y-auto">
-                    <form @submit.prevent="saveKnowledgeBaseSettings" class="p-6">
-                      <div class="space-y-8">
-
-                        <!-- 文本分块设置 -->
-                        <div>
-                          <h4 class="text-lg font-medium text-gray-900 mb-4">文本分块设置</h4>
-                          <div class="space-y-4">
-                            <!-- Chunk Size -->
-                            <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">
-                                分块大小 (chunk_size)
-                                <span class="text-xs text-gray-500 ml-1">范围: 100-4000</span>
-                              </label>
-                              <input
-                                  v-model.number="knowledgeBaseSettings.chunk_size"
-                                  type="number"
-                                  min="100"
-                                  max="4000"
-                                  required
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors"
-                                  placeholder="输入分块大小"
-                              />
-                              <p class="text-xs text-gray-500 mt-1">每个文本块的最大字符数</p>
-                            </div>
-
-                            <!-- Chunk Overlap -->
-                            <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">
-                                分块重叠 (chunk_overlap)
-                                <span class="text-xs text-gray-500 ml-1">范围: 0-500，且不能大于分块大小</span>
-                              </label>
-                              <input
-                                  v-model.number="knowledgeBaseSettings.chunk_overlap"
-                                  type="number"
-                                  min="0"
-                                  :max="Math.min(500, knowledgeBaseSettings.chunk_size - 1)"
-                                  required
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors"
-                                  placeholder="输入重叠字符数"
-                              />
-                              <p class="text-xs text-gray-500 mt-1">相邻文本块之间的重叠字符数</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- 文本拆分策略 -->
-                        <div>
-                          <h4 class="text-lg font-medium text-gray-900 mb-4">文本拆分策略</h4>
-                          <div class="space-y-4">
-                            <div class="flex items-center space-x-4">
-                              <label class="flex items-center">
-                                <input
-                                    v-model="knowledgeBaseSettings.text_split_strategy"
-                                    type="radio"
-                                    value="fixed_chars"
-                                    class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
-                                />
-                                <span class="ml-2 text-sm text-gray-700">按固定字符拆分</span>
-                              </label>
-                              <label class="flex items-center">
-                                <input
-                                    v-model="knowledgeBaseSettings.text_split_strategy"
-                                    type="radio"
-                                    value="semantic"
-                                    class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
-                                />
-                                <span class="ml-2 text-sm text-gray-700">按语义自动切分</span>
-                              </label>
-                            </div>
-
-                            <!-- 固定字符拆分设置 -->
-                            <div v-if="knowledgeBaseSettings.text_split_strategy === 'fixed_chars'" class="mt-4">
-                              <label class="block text-sm font-medium text-gray-700 mb-2">拆分字符</label>
-                              <div class="space-y-2">
-                                <div
-                                    v-for="(_, index) in knowledgeBaseSettings.split_chars"
-                                    :key="index"
-                                    class="flex items-center space-x-2"
-                                >
-                                  <span class="text-sm text-gray-500 w-8">{{ index + 1 }}.</span>
-                                  <input
-                                      :value="displaySplitChar(knowledgeBaseSettings.split_chars[index])"
-                                      @input="updateSplitChar(index, ($event.target as HTMLInputElement).value)"
-                                      type="text"
-                                      class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-colors text-sm font-mono"
-                                      placeholder="输入拆分字符"
-                                  />
-                                  <button
-                                      type="button"
-                                      @click="removeSplitChar(index)"
-                                      class="text-red-600 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-colors"
-                                      title="删除"
-                                  >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                  </button>
-                                </div>
-                                <button
-                                    type="button"
-                                    @click="addSplitChar"
-                                    class="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                                >
-                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                  </svg>
-                                  <span>添加拆分字符</span>
-                                </button>
-                              </div>
-                              <p class="text-xs text-gray-500 mt-2">
-                                按优先级顺序设置拆分字符，系统会按顺序尝试使用这些字符进行文本拆分。<br>
-                                特殊字符输入方式：换行符输入 <code class="bg-gray-100 px-1 rounded">\\n</code>，双换行符输入 <code class="bg-gray-100 px-1 rounded">\\n\\n</code>，制表符输入 <code class="bg-gray-100 px-1 rounded">\\t</code>
-                              </p>
-                            </div>
-
-                            <!-- 语义拆分说明 -->
-                            <div v-if="knowledgeBaseSettings.text_split_strategy === 'semantic'" class="mt-4">
-                              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div class="flex items-start space-x-3">
-                                  <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor"
-                                       viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                  </svg>
-                                  <div>
-                                    <h5 class="text-sm font-medium text-blue-900 mb-1">语义自动切分</h5>
-                                    <p class="text-sm text-blue-700">
-                                      系统将使用AI模型自动识别文本的语义边界进行切分，确保每个文本块在语义上完整。这种方式可能会产生长度不均匀但语义更完整的文本块。</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- 知识库索引类型 -->
-                        <div>
-                          <h4 class="text-lg font-medium text-gray-900 mb-4">知识库索引类型</h4>
-                          <div class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <label class="relative cursor-pointer">
-                                <input
-                                    v-model="knowledgeBaseSettings.index_type"
-                                    type="radio"
-                                    value="vector"
-                                    class="sr-only"
-                                />
-                                <div
-                                    class="border-2 rounded-lg p-4 transition-all duration-200"
-                                    :class="knowledgeBaseSettings.index_type === 'vector' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                                >
-                                  <div class="flex items-start space-x-3">
-                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5"
-                                         :class="knowledgeBaseSettings.index_type === 'vector' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                                      <div v-if="knowledgeBaseSettings.index_type === 'vector'"
-                                           class="w-2 h-2 bg-white rounded-full"></div>
-                                    </div>
-                                    <div>
-                                      <h5 class="font-medium text-gray-900 mb-1">常规向量索引</h5>
-                                      <p class="text-sm text-gray-600">
-                                        使用向量嵌入技术构建索引，适用于大多数文档检索场景，检索速度快，准确性高。</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </label>
-
-                              <label class="relative cursor-pointer">
-                                <input
-                                    v-model="knowledgeBaseSettings.index_type"
-                                    type="radio"
-                                    value="knowledge_graph"
-                                    class="sr-only"
-                                />
-                                <div
-                                    class="border-2 rounded-lg p-4 transition-all duration-200"
-                                    :class="knowledgeBaseSettings.index_type === 'knowledge_graph' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                                >
-                                  <div class="flex items-start space-x-3">
-                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5"
-                                         :class="knowledgeBaseSettings.index_type === 'knowledge_graph' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                                      <div v-if="knowledgeBaseSettings.index_type === 'knowledge_graph'"
-                                           class="w-2 h-2 bg-white rounded-full"></div>
-                                    </div>
-                                    <div>
-                                      <h5 class="font-medium text-gray-900 mb-1">知识图谱索引</h5>
-                                      <p class="text-sm text-gray-600">
-                                        构建实体关系图谱，适用于需要理解实体间关系的复杂查询场景，支持推理查询。</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </label>
-
-                              <label class="relative cursor-pointer">
-                                <input
-                                    v-model="knowledgeBaseSettings.index_type"
-                                    type="radio"
-                                    value="long_document"
-                                    class="sr-only"
-                                />
-                                <div
-                                    class="border-2 rounded-lg p-4 transition-all duration-200"
-                                    :class="knowledgeBaseSettings.index_type === 'long_document' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                                >
-                                  <div class="flex items-start space-x-3">
-                                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5"
-                                         :class="knowledgeBaseSettings.index_type === 'long_document' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'">
-                                      <div v-if="knowledgeBaseSettings.index_type === 'long_document'"
-                                           class="w-2 h-2 bg-white rounded-full"></div>
-                                    </div>
-                                    <div>
-                                      <h5 class="font-medium text-gray-900 mb-1">长文档索引</h5>
-                                      <p class="text-sm text-gray-600">
-                                        专为长文档优化的检索索引，保持上下文连续性，适用于学术论文、技术文档等长内容。</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-
-                      <div class="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-                        <button
-                            type="button"
-                            @click="showSettingsModal = false"
-                            class="px-6 py-2.5 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                          取消
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="isSavingSettings"
-                            class="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-                        >
-                          {{ isSavingSettings ? '保存中...' : '保存设置' }}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
+          <!-- 文本分块设置 -->
+          <div>
+            <h4 class="text-base font-semibold text-gray-900 mb-3">文本分块设置</h4>
+            <div class="space-y-4">
+              <!-- Chunk Size -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  分块大小 (chunk_size)
+                  <span class="text-xs text-gray-400 ml-1">范围: 100-4000</span>
+                </label>
+                <a-input-number
+                  v-model:value="knowledgeBaseSettings.chunk_size"
+                  :min="100"
+                  :max="4000"
+                  class="w-full"
+                  placeholder="输入分块大小"
+                />
+                <p class="text-xs text-gray-400 mt-1">每个文本块的最大字符数</p>
               </div>
-            </section>
+
+              <!-- Chunk Overlap -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  分块重叠 (chunk_overlap)
+                  <span class="text-xs text-gray-400 ml-1">范围: 0-500，且不能大于分块大小</span>
+                </label>
+                <a-input-number
+                  v-model:value="knowledgeBaseSettings.chunk_overlap"
+                  :min="0"
+                  :max="Math.min(500, knowledgeBaseSettings.chunk_size - 1)"
+                  class="w-full"
+                  placeholder="输入重叠字符数"
+                />
+                <p class="text-xs text-gray-400 mt-1">相邻文本块之间的重叠字符数</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 文本拆分策略 -->
+          <div>
+            <h4 class="text-base font-semibold text-gray-900 mb-3">文本拆分策略</h4>
+            <a-radio-group v-model:value="knowledgeBaseSettings.text_split_strategy" class="space-y-3">
+              <a-radio value="fixed_chars">按固定字符拆分</a-radio>
+              <a-radio value="semantic">按语义自动切分</a-radio>
+            </a-radio-group>
+
+            <!-- 固定字符拆分设置 -->
+            <div v-if="knowledgeBaseSettings.text_split_strategy === 'fixed_chars'" class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">拆分字符</label>
+              <div class="space-y-2">
+                <div
+                  v-for="(_, index) in knowledgeBaseSettings.split_chars"
+                  :key="index"
+                  class="flex items-center space-x-2"
+                >
+                  <span class="text-sm text-gray-400 w-6">{{ index + 1 }}.</span>
+                  <a-input
+                    :value="displaySplitChar(knowledgeBaseSettings.split_chars[index])"
+                    @change="updateSplitChar(index, ($event.target as HTMLInputElement).value)"
+                    class="flex-1"
+                    placeholder="输入拆分字符"
+                    size="small"
+                  />
+                  <a-button
+                    type="text"
+                    danger
+                    size="small"
+                    @click="removeSplitChar(index)"
+                    title="删除"
+                  >
+                    <template #icon>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </template>
+                  </a-button>
+                </div>
+                <a-button type="dashed" block @click="addSplitChar">
+                  <template #icon>
+                    <svg class="w-4 h-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                  </template>
+                  添加拆分字符
+                </a-button>
+              </div>
+              <p class="text-xs text-gray-400 mt-2">
+                按优先级顺序设置拆分字符，系统会按顺序尝试使用这些字符进行文本拆分。<br>
+                特殊字符输入方式：换行符输入 <code class="bg-gray-100 px-1 rounded text-xs">\\n</code>，双换行符输入 <code class="bg-gray-100 px-1 rounded text-xs">\\n\\n</code>，制表符输入 <code class="bg-gray-100 px-1 rounded text-xs">\\t</code>
+              </p>
+            </div>
+
+            <!-- 语义拆分说明 -->
+            <div v-if="knowledgeBaseSettings.text_split_strategy === 'semantic'" class="mt-4">
+              <a-alert
+                message="语义自动切分"
+                description="系统将使用AI模型自动识别文本的语义边界进行切分，确保每个文本块在语义上完整。这种方式可能会产生长度不均匀但语义更完整的文本块。"
+                type="info"
+                show-icon
+              />
+            </div>
+          </div>
+          <!-- 知识库索引类型 -->
+          <div>
+            <h4 class="text-base font-semibold text-gray-900 mb-3">知识库索引类型</h4>
+            <a-radio-group v-model:value="knowledgeBaseSettings.index_type" class="flex flex-col space-y-3 w-full">
+              <a-radio value="vector" class="!mr-0">
+                <span class="flex flex-col ml-2">
+                  <span class="font-medium text-gray-900">常规向量索引</span>
+                  <span class="text-xs text-gray-500">使用向量嵌入技术构建索引，适用于大多数文档检索场景，检索速度快，准确性高。</span>
+                </span>
+              </a-radio>
+              <a-radio value="knowledge_graph" class="!mr-0">
+                <span class="flex flex-col ml-2">
+                  <span class="font-medium text-gray-900">知识图谱索引</span>
+                  <span class="text-xs text-gray-500">构建实体关系图谱，适用于需要理解实体间关系的复杂查询场景，支持推理查询。</span>
+                </span>
+              </a-radio>
+              <a-radio value="long_document" class="!mr-0">
+                <span class="flex flex-col ml-2">
+                  <span class="font-medium text-gray-900">长文档索引</span>
+                  <span class="text-xs text-gray-500">专为长文档优化的检索索引，保持上下文连续性，适用于学术论文、技术文档等长内容。</span>
+                </span>
+              </a-radio>
+            </a-radio-group>
           </div>
         </div>
-      </Transition>
-    </Teleport>
-
-    <!-- 自定义弹窗组件 -->
-    <CustomModal
-      v-model:isVisible="modal.isVisible"
-      :type="modal.type"
-      :title="modal.title"
-      :message="modal.message"
-      :confirmText="modal.confirmText"
-      :cancelText="modal.cancelText"
-      @confirm="handleModalConfirm"
-      @cancel="handleModalCancel"
-    />
+        <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+          <a-button @click="showSettingsModal = false">取消</a-button>
+          <a-button type="primary" html-type="submit" :loading="isSavingSettings">
+            保存设置
+          </a-button>
+        </div>
+      </form>
+    </a-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import {computed, onMounted, onUnmounted, ref} from 'vue'
+import { Modal, message } from 'ant-design-vue'
 import {
   createKnowledgeBase as createKnowledgeBaseAPI,
   deleteKnowledgeBase as deleteKnowledgeBaseAPI,
@@ -1062,10 +821,10 @@ import {
   type KnowledgeBase,
   type KnowledgeBaseSettings,
   type KnowledgeDocument,
+  buildKnowledgeBase as buildKnowledgeBaseAPI,
   updateKnowledgeBase as updateKnowledgeBaseAPI,
   type UpdateKnowledgeBaseRequest
 } from '@/api/knowledge'
-import CustomModal from '@/components/CustomModal.vue'
 
 // 响应式数据
 const knowledgeBases = ref<KnowledgeBase[]>([])
@@ -1114,17 +873,25 @@ const isSavingSettings = ref(false)
 // 存储知识库类型信息的Map
 const knowledgeBaseTypes = ref<Map<string, string>>(new Map())
 
-// 自定义弹窗控制
-const modal = ref({
-  isVisible: false,
-  type: 'alert' as 'alert' | 'confirm' | 'success' | 'error' | 'warning',
-  title: '',
-  message: '',
-  confirmText: '确定',
-  cancelText: '取消',
-  onConfirm: null as (() => void) | null,
-  onCancel: null as (() => void) | null
-})
+// 弹窗方法 — 使用 antd Modal 命令式 API
+const showAlert = (message: string, title: string = '提示', type: 'alert' | 'success' | 'error' | 'warning' = 'alert') => {
+  const modalMap: Record<string, (config: any) => void> = {
+    success: Modal.success,
+    error: Modal.error,
+    warning: Modal.warning,
+    alert: Modal.info,
+  }
+  modalMap[type]({ title, content: message })
+}
+
+const showConfirm = (message: string, title: string = '确认', onConfirm?: () => void, onCancel?: () => void) => {
+  Modal.confirm({
+    title,
+    content: message,
+    onOk: () => onConfirm?.(),
+    onCancel: () => onCancel?.(),
+  })
+}
 
 // 在script setup部分添加分页相关的响应式变量
 const currentPage = ref(1)
@@ -1196,45 +963,6 @@ const getVisiblePages = () => {
   }
 
   return pages
-}
-
-// 自定义弹窗方法
-const showAlert = (message: string, title: string = '提示', type: 'alert' | 'success' | 'error' | 'warning' = 'alert') => {
-  modal.value = {
-    isVisible: true,
-    type,
-    title,
-    message,
-    confirmText: '确定',
-    cancelText: '取消',
-    onConfirm: null,
-    onCancel: null
-  }
-}
-
-const showConfirm = (message: string, title: string = '确认', onConfirm?: () => void, onCancel?: () => void) => {
-  modal.value = {
-    isVisible: true,
-    type: 'confirm',
-    title,
-    message,
-    confirmText: '确定',
-    cancelText: '取消',
-    onConfirm: onConfirm || null,
-    onCancel: onCancel || null
-  }
-}
-
-const handleModalConfirm = () => {
-  if (modal.value.onConfirm) {
-    modal.value.onConfirm()
-  }
-}
-
-const handleModalCancel = () => {
-  if (modal.value.onCancel) {
-    modal.value.onCancel()
-  }
 }
 
 // 添加分页相关方法
@@ -1383,11 +1111,13 @@ const updateKnowledgeBase = async () => {
     if (response.success) {
       showEditModal.value = false
       await refreshKnowledgeBases()
-      // 这里可以添加成功提示
+      message.success('知识库更新成功')
+    } else {
+      showAlert('更新知识库失败: ' + (response.message || '未知错误'), '错误', 'error')
     }
   } catch (error) {
     console.error('更新知识库失败:', error)
-    // 这里可以添加错误提示
+    showAlert('更新知识库失败: ' + (error as Error).message, '错误', 'error')
   } finally {
     isUpdating.value = false
   }
@@ -1428,6 +1158,30 @@ const deleteKnowledgeBase = async (kb: KnowledgeBase, event?: Event) => {
       }
     }
   )
+}
+
+const buildingKnowledgeBaseIds = ref<Set<string>>(new Set())
+
+const buildKnowledgeBase = async (kb: KnowledgeBase, event: Event) => {
+  event.stopPropagation()
+
+  buildingKnowledgeBaseIds.value.add(kb.id)
+
+  try {
+    const response = await buildKnowledgeBaseAPI(kb.id)
+    if (response.success) {
+      await refreshKnowledgeBases()
+      showAlert(response.message || '知识库构建完成', '提示', 'success')
+    } else {
+      showAlert('构建知识库失败: ' + response.message, '错误', 'error')
+    }
+  } catch (error) {
+    console.error('构建知识库失败:', error)
+    showAlert('构建知识库失败: ' + (error as Error).message, '错误', 'error')
+    await refreshKnowledgeBases()
+  } finally {
+    buildingKnowledgeBaseIds.value.delete(kb.id)
+  }
 }
 
 const selectKnowledgeBase = async (kb: KnowledgeBase) => {
@@ -1496,7 +1250,8 @@ const saveKnowledgeBaseSettings = async () => {
 
     if (response.success) {
       showSettingsModal.value = false
-      showAlert('设置保存成功', '成功', 'success')
+      await refreshKnowledgeBases()
+      message.success('设置保存成功')
     } else {
       showAlert('保存设置失败: ' + response.message, '错误', 'error')
     }
@@ -1821,8 +1576,8 @@ const removeDataItem = async (item: any) => {
 // 工具方法
 const getStatusText = (status: string) => {
   const statusMap = {
-    'active': '活跃',
-    'inactive': '非活跃',
+    'active': '运行中',
+    'inactive': '非运行',
     'building': '构建中'
   }
   return statusMap[status as keyof typeof statusMap] || status
@@ -1830,6 +1585,7 @@ const getStatusText = (status: string) => {
 
 // 获取知识库类型信息
 const getKnowledgeBaseTypeInfo = (kbId: string) => {
+  debugger
   const indexType = knowledgeBaseTypes.value.get(kbId) || 'vector'
   
   const typeConfig = {
@@ -1920,23 +1676,6 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-.modal-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modal-scroll::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
-  border-radius: 3px;
-}
-
-.modal-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.6);
-}
-
 /* 自定义滚动条样式 */
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
@@ -2011,39 +1750,7 @@ onUnmounted(() => {
   box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
 }
 
-/* 抽屉动画效果 */
-.drawer-enter-active,
-.drawer-leave-active {
-  transition: all 0.3s ease;
-}
-
-.drawer-enter-from,
-.drawer-leave-to {
-  opacity: 0;
-}
-
-.drawer-enter-from .bg-white,
-.drawer-leave-to .bg-white {
-  transform: translateX(100%);
-}
-
-.drawer-enter-active .bg-white,
-.drawer-leave-active .bg-white {
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* 背景遮罩动画 */
-.drawer-enter-from .bg-black,
-.drawer-leave-to .bg-black {
-  opacity: 0;
-}
-
-.drawer-enter-active .bg-black,
-.drawer-leave-active .bg-black {
-  transition: opacity 0.3s ease;
-}
-
-/* 响应式调整 */
+/* 分页控件样式优化 */
 @media (max-width: 768px) {
   .pagination-container {
     flex-direction: column;

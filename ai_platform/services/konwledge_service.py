@@ -3,15 +3,15 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any, Tuple
 
 from loguru import logger
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_,delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from ..models import KnowledgeBase, KnowledgeBaseFile, Base
 from ai_platform.config.resource import create_engine
 from pydantic import BaseModel, Field
 from uuid import UUID
-from sqlalchemy import delete, update
 from fastapi import HTTPException
+from ai_platform.pipeline.dataPipeline import FileDataPipeline
 class KnowledgeBaseFileCreate(BaseModel):
     """知识库文件创建模型"""
     knowledge_base_id: UUID = Field(description="知识库ID")
@@ -134,6 +134,8 @@ class KnowledgeService:
                     knowledge_base.settings = settings
                 else:
                     knowledge_base.settings = {}
+                knowledge_base.status = "building"
+                knowledge_base.update_time = datetime.now()
                 await session.commit()
                 return knowledge_base
         except Exception as e:
@@ -157,6 +159,53 @@ class KnowledgeService:
             logger.exception(f"获取知识库详情失败: {e}")
             raise
 
+    async def build_knowledge_base(self, knowledge_base_id: UUID):
+        """构建知识库"""
+        try:
+            await self._get_engine()
+            async with AsyncSession(self.engine) as session:
+                # 1. 获取知识库基本信息
+                knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
+                if knowledge_base is None:
+                    raise ValueError(f"知识库 {knowledge_base_id} 不存在")
+                
+                # 2. 获取知识库所有文件的路径
+                query = select(KnowledgeBaseFile.file_path).where(
+                    KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
+                )
+                file_records = await session.execute(query)
+                file_paths = file_records.scalars().all()
+                
+                # 3. 记录日志便于调试
+                logger.info(f"知识库 {knowledge_base_id} 关联了 {len(file_paths)} 个文件: {file_paths}")
+                
+                # 4. TODO: 在这里调用文件处理逻辑
+                # 例如：解析文件、分块、生成向量、存入向量数据库等
+                # await self._process_files(file_paths, knowledge_base_id)
+                file_pipeline = FileDataPipeline(file_paths)
+                
+                # 5. 更新状态（无论是否有文件，都标记为 active？根据业务决定）
+                stmt = update(KnowledgeBaseFile).where(
+                    KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
+                ).values(status="active")
+                await session.execute(stmt)
+                
+                knowledge_base.status = "active"
+                knowledge_base.update_time = datetime.now()
+                await session.commit()
+                await session.refresh(knowledge_base)
+                
+                return {
+                    "knowledge_base_id": str(knowledge_base_id),
+                    "status": "active",
+                    "file_paths": file_paths,
+                    "file_count": len(file_paths)  # 增加文件数量字段
+                }
+                
+        except Exception as e:
+            logger.exception(f"构建知识库失败: {e}")
+
+
     #文件管理
     async def create_file_record(self, file_create: KnowledgeBaseFileCreate):
         """创建文件记录"""
@@ -172,8 +221,17 @@ class KnowledgeService:
                     file_size=file_create.file_size,
                     file_type=file_create.file_type,
                     mime_type=file_create.mime_type,
+                    status="building",
                 )
                 session.add(new_file_record)
+
+                #更改知识库状态
+                knowledge_base = await session.get(KnowledgeBase, file_create.knowledge_base_id)
+                if knowledge_base is None:
+                    raise ValueError(f"知识库 {file_create.knowledge_base_id} 不存在")
+                knowledge_base.status = "building"
+                knowledge_base.update_time = datetime.now()
+
                 await session.commit()
                 session.refresh(new_file_record)
                 return new_file_record

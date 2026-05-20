@@ -68,7 +68,7 @@ async def upload_file(
                 file_type=upload_info.get("content_type", file.content_type),
                 mime_type=upload_info.get("content_type", file.content_type),
             ))
-
+            
             uploaded_files.append(file.filename)
         except HTTPException:
             raise

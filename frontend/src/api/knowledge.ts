@@ -150,7 +150,7 @@ export const createKnowledgeBase = async (data: CreateKnowledgeBaseRequest): Pro
   return await response.json()
 }
 
-// 更新知识库
+// 更新知识库设置
 export const updateKnowledgeBase = async (kbId: string, data: UpdateKnowledgeBaseRequest): Promise<KnowledgeBaseResponse> => {
   const response = await fetch(`${API_BASE_URL}/knowledge/update/${kbId}`, {
     method: 'PUT',
@@ -164,6 +164,24 @@ export const updateKnowledgeBase = async (kbId: string, data: UpdateKnowledgeBas
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || '更新知识库失败')
+  }
+
+  return await response.json()
+}
+
+// 构建知识库
+export const buildKnowledgeBase = async (kbId: string): Promise<{ success: boolean; message: string; data?: any }> => {
+  const response = await fetch(`${API_BASE_URL}/knowledge/build/${kbId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '构建知识库失败')
   }
 
   return await response.json()
