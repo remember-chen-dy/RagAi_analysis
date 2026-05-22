@@ -301,6 +301,50 @@ export const getKnowledgeBaseStatistics = async (kbId: string): Promise<{ succes
   return await response.json()
 }
 
+// 知识库内容片段类型
+export interface KnowledgeChunk {
+  node_id: string
+  text: string
+  metadata: Record<string, any>
+}
+
+// 知识库内容分页响应
+export interface KnowledgeChunkListResponse {
+  items: KnowledgeChunk[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
+/**
+ * 读取知识库内容 — 分页获取向量数据库中的文件片段
+ */
+export const readKnowledgeBaseContent = async (
+  knowledgeBaseId: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<KnowledgeChunkListResponse> => {
+  const response = await fetch(
+    `${API_BASE_URL}/knowledge/read/${knowledgeBaseId}?page=${page}&page_size=${pageSize}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '读取知识库内容失败')
+  }
+
+  const result = await response.json()
+  return result.data as KnowledgeChunkListResponse
+}
+
 // 知识库API类
 export class KnowledgeAPI {
   /**

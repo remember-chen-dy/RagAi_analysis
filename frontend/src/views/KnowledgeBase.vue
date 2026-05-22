@@ -274,7 +274,7 @@
                   <div v-else class="space-y-6">
                     <div
                         v-for="(item, index) in displayedData"
-                        :key="item.id || index"
+                        :key="item.node_id || index"
                         class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200"
                     >
                       <!-- 片段头部 -->
@@ -288,16 +288,16 @@
                           </div>
                           <div>
                             <h3 class="font-medium text-gray-900">
-                              {{ item.title || `数据片段 #${(currentPage - 1) * pageSize + index + 1}` }}</h3>
-                            <p class="text-sm text-gray-500">来源：{{ item.source || '未知来源' }}</p>
+                              {{ item.metadata?.file_name || `数据片段 #${(currentPage - 1) * pageSize + index + 1}` }}
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                              ID：{{ item.node_id?.substring(0, 8) }}...
+                            </p>
                           </div>
                         </div>
                         <div class="flex items-center space-x-2">
-                          <span v-if="item.score" class="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-                            {{ (item.score * 100).toFixed(1) }}%
-                          </span>
                           <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                            {{ item.type || 'TEXT' }}
+                            {{ item.metadata?.file_type || 'TEXT' }}
                           </span>
                         </div>
                       </div>
@@ -305,7 +305,7 @@
                       <!-- 内容区域 -->
                       <div class="mb-4">
                         <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-gray-900">
-                          <p class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                          <p class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap line-clamp-6">
                             {{ item.content || item.text || '暂无内容' }}
                           </p>
                         </div>
@@ -314,9 +314,8 @@
                       <!-- 元信息和操作 -->
                       <div class="flex items-center justify-between text-xs text-gray-500">
                         <div class="flex items-center space-x-4">
-                          <span v-if="item.created_at">{{ formatDate(item.created_at) }}</span>
-                          <span v-if="item.chunk_index">块索引：{{ item.chunk_index }}</span>
-                          <span v-if="item.word_count">{{ item.word_count }} 字</span>
+                          <span v-if="item.metadata?.page_label">页码：{{ item.metadata.page_label }}</span>
+                          <span>{{ (item.text || item.content || '').length }} 字</span>
                         </div>
                         <div class="flex items-center space-x-2">
                           <button
@@ -823,6 +822,7 @@ import {
   type KnowledgeDocument,
   buildKnowledgeBase as buildKnowledgeBaseAPI,
   updateKnowledgeBase as updateKnowledgeBaseAPI,
+  readKnowledgeBaseContent,
   type UpdateKnowledgeBaseRequest
 } from '@/api/knowledge'
 
@@ -1296,260 +1296,77 @@ const updateSplitChar = (index: number, value: string) => {
 const refreshDocuments = async (page: number = 1) => {
   if (!selectedKnowledgeBase.value) return
 
-  console.log('正在刷新知识库数据...', {
-    knowledgeBaseId: selectedKnowledgeBase.value.id,
-    knowledgeBaseName: selectedKnowledgeBase.value.name,
-    page: page,
-    pageSize: pageSize.value
-  })
-
   isLoadingDocuments.value = true
 
   try {
-    // 计算API请求的offset
-    const offset = (page - 1) * pageSize.value
-
-    // 使用KnowledgeAPI获取知识库数据片段，只获取当前页需要的数据
-    console.log('调用API:', `KnowledgeAPI.getKnowledgeBaseData(${selectedKnowledgeBase.value.id}, ${pageSize.value}, ${offset})`)
-    const response = await KnowledgeAPI.getKnowledgeBaseData(
-        selectedKnowledgeBase.value.id,
-        pageSize.value, // 只获取当前页的数据量
-        offset
+    const result = await readKnowledgeBaseContent(
+      selectedKnowledgeBase.value.id,
+      page,
+      pageSize.value
     )
-    console.log('知识库数据API响应:', response)
 
-    if (response.success && response.data && response.data.chunks) {
-      knowledgeData.value = response.data.chunks
-      totalItems.value = response.data.total || response.data.chunks.length
-      currentPage.value = page
-
-      console.log('✓ 成功从API加载数据:', {
-        count: knowledgeData.value.length,
-        total: totalItems.value,
-        currentPage: currentPage.value,
-        totalPages: totalPages.value,
-        firstItem: knowledgeData.value[0]
-      })
-    } else {
-      console.warn('API响应格式不正确，使用模拟数据', response)
-      // 生成分页的模拟数据
-      const allMockData = generateMockData()
-      const startIndex = (page - 1) * pageSize.value
-      const endIndex = startIndex + pageSize.value
-      knowledgeData.value = allMockData.slice(startIndex, endIndex)
-      totalItems.value = allMockData.length
-      currentPage.value = page
-      console.log('使用模拟数据:', knowledgeData.value.length, '个片段，总计:', totalItems.value)
-    }
+    knowledgeData.value = result.items
+    totalItems.value = result.total
+    currentPage.value = result.page
   } catch (error) {
-    console.error('获取知识库数据失败，使用模拟数据:', error)
-    // 生成分页的模拟数据
-    const allMockData = generateMockData()
-    const startIndex = (page - 1) * pageSize.value
-    const endIndex = startIndex + pageSize.value
-    knowledgeData.value = allMockData.slice(startIndex, endIndex)
-    totalItems.value = allMockData.length
-    currentPage.value = page
-    console.log('备用模拟数据:', knowledgeData.value.length, '个片段，总计:', totalItems.value)
+    console.error('获取知识库数据失败:', error)
+    knowledgeData.value = []
+    totalItems.value = 0
   } finally {
     isLoadingDocuments.value = false
-    console.log('数据加载完成，当前数据数量:', knowledgeData.value.length)
   }
-}
-
-// 生成模拟数据用于演示
-const generateMockData = () => {
-  if (!selectedKnowledgeBase.value) return []
-
-  const baseData = [
-    {
-      title: '产品功能介绍',
-      content: '这是一个重要的知识点，包含了关于产品功能的详细描述。它解释了如何使用系统的核心功能，包括用户界面导航、数据输入验证、以及常见问题的解决方案。',
-      source: '产品手册.pdf',
-      type: 'TEXT'
-    },
-    {
-      title: '用户操作指南',
-      content: '用户指南中提到的重要操作步骤，包括登录、设置和基本操作流程。这些步骤对新用户尤其重要，能够帮助他们快速上手使用系统。',
-      source: '用户指南.docx',
-      type: 'TEXT'
-    },
-    {
-      title: '系统技术架构',
-      content: '系统架构的详细技术说明，包括数据库设计、API接口规范和安全配置要求。这部分内容主要面向技术人员，提供了系统实现的详细信息。',
-      source: '技术文档.md',
-      type: 'TECHNICAL'
-    },
-    {
-      title: '常见问题解答',
-      content: '用户在使用过程中遇到的常见问题及其解决方案。包括登录问题、数据同步问题、权限设置问题等。',
-      source: 'FAQ.pdf',
-      type: 'FAQ'
-    },
-    {
-      title: '安全策略规范',
-      content: '系统的安全策略和最佳实践，包括密码策略、访问控制、数据加密和备份策略。这些策略确保了系统的安全性和可靠性。',
-      source: '安全手册.pdf',
-      type: 'SECURITY'
-    },
-    {
-      title: '数据库配置',
-      content: '详细的数据库配置说明，包括连接参数、索引优化、性能调优等内容。这些配置对系统性能有重要影响。',
-      source: '数据库文档.md',
-      type: 'TECHNICAL'
-    },
-    {
-      title: 'API接口文档',
-      content: 'RESTful API接口的详细说明，包括请求格式、响应结构、错误码定义等。开发者可以根据此文档进行集成开发。',
-      source: 'API文档.json',
-      type: 'TECHNICAL'
-    },
-    {
-      title: '部署指南',
-      content: '系统部署的完整流程，包括环境准备、依赖安装、配置文件设置、服务启动等步骤。',
-      source: '部署手册.md',
-      type: 'GUIDE'
-    }
-  ]
-
-  // 生成25个模拟数据项以测试分页
-  const mockData = []
-  for (let i = 0; i < 25; i++) {
-    const baseItem = baseData[i % baseData.length]
-    mockData.push({
-      id: String(i + 1),
-      title: `${baseItem.title} #${i + 1}`,
-      content: `${baseItem.content} (数据条目 ${i + 1})`,
-      source: baseItem.source,
-      type: baseItem.type,
-      chunk_index: (i % 5) + 1,
-      word_count: Math.floor(Math.random() * 200) + 50,
-      score: Math.random() * 0.3 + 0.7, // 0.7-1.0之间的随机分数
-      created_at: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString() // 最近30天内的随机日期
-    })
-  }
-
-  return mockData
 }
 
 
 const performSearch = async (page: number = 1) => {
-  console.log('执行搜索:', {
-    query: dataContentSearchQuery.value,
-    hasKnowledgeBase: !!selectedKnowledgeBase.value,
-    page: page
-  })
+  if (!selectedKnowledgeBase.value) return
 
-  if (!selectedKnowledgeBase.value) {
-    console.log('没有选择知识库')
-    return
-  }
-
-  // 如果搜索词为空，清空搜索结果并恢复正常浏览
   if (!dataContentSearchQuery.value.trim()) {
     searchResults.value = []
     currentPage.value = 1
     await refreshDocuments(1)
-    console.log('搜索词为空，恢复正常浏览模式')
     return
   }
 
   isLoadingDocuments.value = true
 
   try {
-    // 计算偏移量
-    const offset = (page - 1) * pageSize.value
-
-    // 使用 getKnowledgeBaseData 方法进行搜索，直接支持分页
-    console.log('调用搜索API:', `KnowledgeAPI.getKnowledgeBaseData(${selectedKnowledgeBase.value.id}, ${pageSize.value}, ${offset}, "${dataContentSearchQuery.value}")`)
-    const response = await KnowledgeAPI.getKnowledgeBaseData(
-        selectedKnowledgeBase.value.id,
-        pageSize.value,
-        offset,
-        dataContentSearchQuery.value
+    const result = await readKnowledgeBaseContent(
+      selectedKnowledgeBase.value.id,
+      page,
+      pageSize.value
     )
 
-    if (response.success && response.data && response.data.chunks) {
-      // 搜索模式下，直接使用API返回的分页数据
-      knowledgeData.value = response.data.chunks
-      totalItems.value = response.data.total || response.data.chunks.length
-      currentPage.value = page
-
-      // 清空搜索结果数组，因为现在直接使用knowledgeData
-      searchResults.value = []
-
-      console.log('✓ 搜索API成功:', {
-        query: dataContentSearchQuery.value,
-        resultCount: knowledgeData.value.length,
-        total: totalItems.value,
-        currentPage: currentPage.value
-      })
-    } else {
-      console.warn('搜索API响应格式不正确，使用模拟数据', response)
-      // 使用模拟数据进行搜索
-      const allMockData = generateMockData()
-      const filteredData = allMockData.filter(item => {
-        const searchLower = dataContentSearchQuery.value.toLowerCase()
-        const content = item.content.toLowerCase()
-        const title = item.title.toLowerCase()
-        const source = item.source.toLowerCase()
-
-        return content.includes(searchLower) ||
-            title.includes(searchLower) ||
-            source.includes(searchLower)
-      })
-
-      // 分页处理
-      const startIndex = (page - 1) * pageSize.value
-      const endIndex = startIndex + pageSize.value
-      knowledgeData.value = filteredData.slice(startIndex, endIndex)
-      totalItems.value = filteredData.length
-      currentPage.value = page
-      searchResults.value = []
-    }
-
-    console.log('搜索完成:', {
-      query: dataContentSearchQuery.value,
-      resultCount: knowledgeData.value.length,
-      total: totalItems.value
-    })
-  } catch (error) {
-    console.error('搜索失败，使用模拟数据:', error)
-    // 备用模拟数据搜索
-    const allMockData = generateMockData()
-    const filteredData = allMockData.filter(item => {
-      const searchLower = dataContentSearchQuery.value.toLowerCase()
-      const content = item.content.toLowerCase()
-      const title = item.title.toLowerCase()
-      const source = item.source.toLowerCase()
-
-      return content.includes(searchLower) ||
-          title.includes(searchLower) ||
-          source.includes(searchLower)
+    const query = dataContentSearchQuery.value.toLowerCase()
+    const filtered = result.items.filter(item => {
+      const text = (item.text || '').toLowerCase()
+      const fileName = ((item.metadata?.file_name || '') as string).toLowerCase()
+      return text.includes(query) || fileName.includes(query)
     })
 
-    // 分页处理
-    const startIndex = (page - 1) * pageSize.value
-    const endIndex = startIndex + pageSize.value
-    knowledgeData.value = filteredData.slice(startIndex, endIndex)
-    totalItems.value = filteredData.length
+    knowledgeData.value = filtered
+    totalItems.value = filtered.length
     currentPage.value = page
     searchResults.value = []
+  } catch (error) {
+    console.error('搜索失败:', error)
+    knowledgeData.value = []
+    totalItems.value = 0
   } finally {
     isLoadingDocuments.value = false
   }
 }
 
 const viewDataDetail = (item: any) => {
-  // 显示数据详情模态框
-  console.log('查看数据详情:', item)
-  // 这里可以实现详情查看功能
-  showAlert(`标题: ${item.title}\n来源: ${item.source}\n内容: ${item.content}`, '数据详情')
+  const title = item.metadata?.file_name || `片段 ${item.node_id?.substring(0, 8) || '-'}`
+  const content = item.text || '(无内容)'
+  showAlert(`[${title}]\n\n${content.substring(0, 500)}${content.length > 500 ? '...' : ''}`, '数据详情')
 }
 
 const removeDataItem = async (item: any) => {
+  const title = item.metadata?.file_name || `片段 ${item.node_id?.substring(0, 8) || '-'}`
   showConfirm(
-    '确定要删除这个数据片段吗？',
+    `确定要删除数据片段「${title}」吗？`,
     '确认删除',
     async () => {
       try {
@@ -1585,7 +1402,6 @@ const getStatusText = (status: string) => {
 
 // 获取知识库类型信息
 const getKnowledgeBaseTypeInfo = (kbId: string) => {
-  debugger
   const indexType = knowledgeBaseTypes.value.get(kbId) || 'vector'
   
   const typeConfig = {

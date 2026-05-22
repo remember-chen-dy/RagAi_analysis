@@ -2,6 +2,9 @@ from llama_index.core import Document, SimpleDirectoryReader
 from llama_index.readers.file import PDFReader, DocxReader, ImageReader
 from loguru import logger
 
+from typing import List, Optional, Dict
+import json
+
 
 # class JSONReader(BaseReader):
 #     """自定义 JSON 文件加载器"""
@@ -22,9 +25,9 @@ from loguru import logger
 
 class DataLoader:
     """数据加载器"""
-
+    
     @staticmethod
-    def load_file_dir(file_paths: list[str]) -> Document:
+    def load_file_dir(file_paths: List[str]) -> List[Document]:
         """加载文件"""
         # 为不同文件类型指定不同的加载器
         file_extractor = {
@@ -39,9 +42,9 @@ class DataLoader:
             recursive=True,
             file_extractor=file_extractor
         )
-        documents=reader.load_data(
-            num_workers=4,  # 并行加载，文件越多提速越明显  
-            show_progress=True,   # 显示进度条，了解加载状态
+        documents = reader.load_data(
+            num_workers=4,
+            show_progress=True,
         )
         logger.info(f"成功加载 {len(documents)} 个文档")
         return documents

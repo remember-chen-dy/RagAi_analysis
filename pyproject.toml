@@ -54,4 +54,5 @@ dependencies = [
     "llama-index-graph-stores-neo4j>=0.4.6",
     "email-validator>=2.2.0",
     "requests>=2.31.0",
+    "pydub>=0.25.1",
 ]

@@ -1,5 +1,5 @@
 import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from uuid import UUID
@@ -140,11 +140,10 @@ async def build_knowledge_base(knowledge_base_id: UUID):
     try:
         result = await knowledge_service.build_knowledge_base(knowledge_base_id)
 
-        
         return ApiResponse(
             success=True,
             code=200,
-            message=f"知识库构建完成，共处理 {result['file_count']} 个文件",
+            message=f"知识库构建完成",
             data=result,
             timestamp=datetime.datetime.now()
         )
@@ -152,3 +151,26 @@ async def build_knowledge_base(knowledge_base_id: UUID):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"知识库构建失败: {str(e)}")
+
+#读取知识库内容
+@router.get("/read/{knowledge_base_id}", response_model=ApiResponse[Any])
+async def read_knowledge_base(
+    knowledge_base_id: UUID,
+    page: int = Query(default=1, ge=1, description="页码，从 1 开始"),
+    page_size: int = Query(default=20, ge=1, le=100, description="每页条数，最大 100"),
+):
+    """读取知识库 — 分页获取 data_vector_store 中的文件片段"""
+    try:
+        result = await knowledge_service.read_knowledge_base(knowledge_base_id, page, page_size)
+        
+        return ApiResponse(
+            success=True,
+            code=200,
+            message=f"知识库读取成功，共 {result['total']} 条",
+            data=result,
+            timestamp=datetime.datetime.now()
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"知识库读取失败: {str(e)}")

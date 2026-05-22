@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings as PydanticBaseSettings
 load_dotenv()
 
@@ -29,6 +29,15 @@ class Setting(PydanticBaseSettings):
     def async_postgres_url(self) -> str:
         """异步PostgreSQL连接字符串"""
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+
+class KnowledgeBaseSettings(BaseModel):
+    """知识库构建设置"""
+    chunk_size: int = Field(default=1000, ge=100, le=4000, description="分块大小")
+    chunk_overlap: int = Field(default=200, ge=0, le=500, description="分块重叠大小")
+    text_split_strategy: str = Field(default="fixed_chars", description="文本分割策略: fixed_chars, semantic")
+    split_chars: List[str] = Field(default=["\n\n", "\n", "。", "！", "？", "；"], description="分割字符列表")
+    index_type: str = Field(default="vector", description="索引类型: vector, knowledge_graph, long_document")
 
 
 settings = Setting()

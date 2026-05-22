@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field
 from uuid import UUID
 from fastapi import HTTPException
 from ai_platform.pipeline.dataPipeline import FileDataPipeline
+from ai_platform.config.setting import KnowledgeBaseSettings
+from ai_platform.config.resource import get_vector_store
+from llama_index.core.vector_stores.types import MetadataFilters, MetadataFilter, FilterOperator
 class KnowledgeBaseFileCreate(BaseModel):
     """知识库文件创建模型"""
     knowledge_base_id: UUID = Field(description="知识库ID")
@@ -21,8 +24,6 @@ class KnowledgeBaseFileCreate(BaseModel):
     file_type: str = Field(description="文件类型")
     mime_type: str = Field(description="文件MIME类型")
     filename: str = Field(description="文件名")
-
-
 
 
 class KnowledgeService:
@@ -169,22 +170,25 @@ class KnowledgeService:
                 if knowledge_base is None:
                     raise ValueError(f"知识库 {knowledge_base_id} 不存在")
                 
-                # 2. 获取知识库所有文件的路径
+                # 2. 获取知识库设置
+                kb_settings = KnowledgeBaseSettings(**(knowledge_base.settings or {}))
+
+                # 3. 获取知识库所有文件的路径
                 query = select(KnowledgeBaseFile.file_path).where(
                     KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
                 )
                 file_records = await session.execute(query)
                 file_paths = file_records.scalars().all()
                 
-                # 3. 记录日志便于调试
-                logger.info(f"知识库 {knowledge_base_id} 关联了 {len(file_paths)} 个文件: {file_paths}")
+                # # 3. 记录日志便于调试
+                # logger.info(f"知识库 {knowledge_base_id} 关联了 {len(file_paths)} 个文件: {file_paths}")
                 
                 # 4. TODO: 在这里调用文件处理逻辑
                 # 例如：解析文件、分块、生成向量、存入向量数据库等
                 # await self._process_files(file_paths, knowledge_base_id)
-                file_pipeline = FileDataPipeline(file_paths)
-                
-                # 5. 更新状态（无论是否有文件，都标记为 active？根据业务决定）
+                file_pipeline = FileDataPipeline(file_paths, kb_settings,knowledge_base_id)
+                await file_pipeline.process_minio_file()
+                # # 5. 更新状态（无论是否有文件，都标记为 active？根据业务决定）
                 stmt = update(KnowledgeBaseFile).where(
                     KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
                 ).values(status="active")
@@ -194,7 +198,7 @@ class KnowledgeService:
                 knowledge_base.update_time = datetime.now()
                 await session.commit()
                 await session.refresh(knowledge_base)
-                
+
                 return {
                     "knowledge_base_id": str(knowledge_base_id),
                     "status": "active",
@@ -204,7 +208,46 @@ class KnowledgeService:
                 
         except Exception as e:
             logger.exception(f"构建知识库失败: {e}")
+    #读取知识库内容
+    async def read_knowledge_base(self, knowledge_base_id: UUID, page: int = 1, page_size: int = 20):
+        """读取知识库内容 — 从 data_vector_store 表中按 knowledge_base_id 过滤并分页"""
+        try:
+            vector_store = get_vector_store()
+            filters = MetadataFilters(
+                filters=[
+                    MetadataFilter(
+                        key="knowledge_base_id",
+                        value=str(knowledge_base_id),
+                        operator=FilterOperator.EQ,
+                    )
+                ]
+            )
+            all_nodes = await vector_store.aget_nodes(filters=filters)
+            total = len(all_nodes)
 
+            start = (page - 1) * page_size
+            end = start + page_size
+            page_nodes = all_nodes[start:end]
+
+            items = []
+            for node in page_nodes:
+                items.append({
+                    "node_id": node.node_id,
+                    "text": node.get_content(),
+                    "metadata": node.metadata,
+                })
+
+            logger.info(f"读取知识库 {knowledge_base_id}: 共 {total} 个节点, 第 {page} 页返回 {len(items)} 条")
+            return {
+                "items": items,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": max(1, (total + page_size - 1) // page_size),
+            }
+        except Exception as e:
+            logger.exception(f"读取知识库内容失败: {e}")
+            raise
 
     #文件管理
     async def create_file_record(self, file_create: KnowledgeBaseFileCreate):

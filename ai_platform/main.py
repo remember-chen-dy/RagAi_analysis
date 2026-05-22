@@ -13,6 +13,7 @@ from ai_platform.config.swagger_config import setup_swagger, SWAGGER_CONFIG
 from fastapi.middleware.cors import CORSMiddleware
 from ai_platform.models.user import user_manager
 from ai_platform.services.konwledge_service import knowledge_service
+from ai_platform.config.resource import init_resource
 # 配置日志
 logger.remove()
 logger.add(
@@ -20,13 +21,12 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
     level=settings.log_level
 )
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     logger.info("应用启动中...")
-
     # 初始化数据库表
+    init_resource()
     await user_manager.init_tables()  # ← 添加 await
     await knowledge_service.init_knowledge_tables()  # ← 添加 await
 
