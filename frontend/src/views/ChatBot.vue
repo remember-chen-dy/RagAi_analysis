@@ -379,15 +379,18 @@ const loadSessions = async () => {
 }
 
 const switchSession = async (sessionId: string) => {
+  if (!sessionId) return
   if (sessionId === currentSessionId.value) return
   try {
     currentSessionId.value = sessionId
     ChatAPI.setCurrentSession(sessionId)
-    messages.value = await ChatAPI.getChatHistory(sessionId)
+    const history = await ChatAPI.getChatHistory(sessionId)
+    messages.value = history.filter(m => m.content)
     await loadSessionKnowledgeBases(sessionId)
     await forceScrollToBottom()
   } catch (error) {
     console.error('切换会话失败:', error)
+    messages.value = []
   }
 }
 
@@ -449,7 +452,7 @@ const sendMessage = async () => {
 
 watch(sessions, (newSessions) => {
   if (newSessions.length > 0 && !currentSessionId.value) switchSession(newSessions[0].id)
-}, {immediate: true})
+})
 
 const loadKnowledgeBases = async () => {
   try {
@@ -465,7 +468,12 @@ const loadKnowledgeBases = async () => {
 
 const loadSessionKnowledgeBases = async (sessionId: string) => {
   try {
-    selectedKnowledgeBases.value = await ChatAPI.getSessionKnowledgeBases(sessionId)
+    const session = sessions.value.find(s => s.id === sessionId)
+    if (session?.knowledge_base_ids) {
+      selectedKnowledgeBases.value = [...session.knowledge_base_ids]
+    } else {
+      selectedKnowledgeBases.value = []
+    }
   } catch (error) {
     console.error('加载会话知识库配置失败:', error)
     selectedKnowledgeBases.value = []
@@ -475,7 +483,10 @@ const loadSessionKnowledgeBases = async (sessionId: string) => {
 const saveSessionKnowledgeBases = async () => {
   if (!currentSessionId.value) return
   try {
-    await ChatAPI.updateSessionKnowledgeBases(currentSessionId.value, selectedKnowledgeBases.value)
+    const session = sessions.value.find(s => s.id === currentSessionId.value)
+    if (session) {
+      session.knowledge_base_ids = [...selectedKnowledgeBases.value]
+    }
   } catch (error) {
     console.error('保存会话知识库配置失败:', error)
   }
@@ -501,8 +512,8 @@ const getKnowledgeBaseName = (id: string) => {
   return kb ? kb.name : '未知知识库'
 }
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 B'
+const formatFileSize = (bytes: number | undefined) => {
+  if (!bytes) return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))

@@ -23,7 +23,7 @@ class KnowledgeBase(Base):
         'chunk_overlap': 200,
         'text_split_strategy': 'fixed_chars', #fixed_chars, semantic
         'split_chars': ['\n\n', '\n', '。', '！', '？', '；'],
-        'index_type': 'vector'
+        'index_type': 'vector'  # vector, hybrid, graph
     },comment="知识库设置")
     create_time = mapped_column(DateTime, default=datetime.now,comment="创建时间")
     update_time = mapped_column(DateTime, onupdate=datetime.now,comment="更新时间")

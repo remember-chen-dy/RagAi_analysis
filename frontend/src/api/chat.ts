@@ -51,13 +51,26 @@ export interface SessionListResponse {
 }
 
 // 聊天历史响应类型
+export interface ChatHistoryItem {
+  id: number
+  key: string
+  timestamp: number
+  role: 'user' | 'assistant'
+  status: string
+  data: {
+    role: string
+    additional_kwargs: Record<string, any>
+    blocks: Array<{
+      block_type: string
+      text: string
+    }>
+  }
+}
+
 export interface ChatHistoryResponse {
   success: boolean
   message: string
-  data: {
-    messages: ChatMessage[]
-    session_id: string
-  }
+  data: ChatHistoryItem[]
   timestamp?: string
 }
 
@@ -117,61 +130,6 @@ export class ChatAPI {
     }
   }
 
-  // 更新会话的知识库配置
-  static async updateSessionKnowledgeBases(sessionId: string, knowledgeBaseIds: string[]): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/chat/${sessionId}/knowledge-bases`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(knowledgeBaseIds),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (!data.success) {
-        throw new Error(data.message || '更新会话知识库配置失败')
-      }
-    } catch (error) {
-      console.error('更新会话知识库配置失败:', error)
-      throw error
-    }
-  }
-
-  // 获取会话的知识库配置
-  static async getSessionKnowledgeBases(sessionId: string): Promise<string[]> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/chat/${sessionId}/knowledge-bases`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (!data.success) {
-        throw new Error(data.message || '获取会话知识库配置失败')
-      }
-
-      return data.data?.knowledge_base_ids || []
-    } catch (error) {
-      console.error('获取会话知识库配置失败:', error)
-      return []
-    }
-  }
-
   // 发送消息到AI
   static async sendMessage(
     message: string, 
@@ -181,7 +139,7 @@ export class ChatAPI {
     try {
       const useSessionId = sessionId || this.currentSessionId || await this.createNewSession()
       
-      const response = await fetch(`${this.baseURL}/api/chat/`, {
+      const response = await fetch(`${this.baseURL}/charts/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +197,7 @@ export class ChatAPI {
       }
 
       return (data.data || []).map((s: any) => ({
-        id: s.session_id,
+        id: s.id,
         created_at: s.created_at,
         last_activity: s.last_activity,
         message_count: s.message_count,
@@ -254,17 +212,16 @@ export class ChatAPI {
   }
 
   // 获取指定会话的聊天历史
-  static async getChatHistory(sessionId: string, limit: number = 50, offset: number = 0): Promise<ChatMessage[]> {
+  static async getChatHistory(sessionId: string): Promise<ChatMessage[]> {
     try {
-      const response = await fetch(`${this.baseURL}/api/chat/${sessionId}/history`, {
+      const response = await fetch(`${this.baseURL}/charts/history`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          limit: limit,
-          offset: offset
+          session_id: sessionId
         })
       })
 
@@ -275,57 +232,41 @@ export class ChatAPI {
       const data: ChatHistoryResponse = await response.json()
       
       if (!data.success) {
-        throw new Error('获取聊天历史失败')
+        throw new Error(data.message || '获取聊天历史失败')
       }
 
-      // 转换时间戳
-      const messages = data.data.messages.map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp).toISOString()
-      }))
-
-      return messages
+      return (data.data || []).map((item: ChatHistoryItem) => {
+        const textBlock = item.data?.blocks?.find(b => b.block_type === 'text')
+        const content = textBlock?.text || ''
+        const timestampMs = item.timestamp / 1e6
+        const timestamp = new Date(timestampMs).toISOString()
+        
+        return {
+          id: item.id.toString(),
+          role: item.role,
+          content: content,
+          timestamp: timestamp,
+          session_id: item.key
+        }
+      })
     } catch (error) {
       console.error('获取聊天历史失败:', error)
       return []
     }
   }
 
-  // 清空指定会话的聊天记录
-  static async clearChatHistory(sessionId: string): Promise<void> {
+  // 删除会话
+  static async deleteSession(sessionId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseURL}/api/chat/${sessionId}/clear`, {
+      const response = await fetch(`${this.baseURL}/charts/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (!data.success) {
-        throw new Error(data.message || '清空聊天历史失败')
-      }
-    } catch (error) {
-      console.error('清空聊天历史失败:', error)
-      throw error
-    }
-  }
-
-  // 删除会话
-  static async deleteSession(sessionId: string): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/chat/${sessionId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
+        body: JSON.stringify({
+          session_id: sessionId
+        }),
       })
 
       if (!response.ok) {
@@ -338,7 +279,6 @@ export class ChatAPI {
         throw new Error(data.message || '删除会话失败')
       }
 
-      // 如果删除的是当前会话，清空当前会话ID
       if (sessionId === this.currentSessionId) {
         this.currentSessionId = null
       }
@@ -348,27 +288,6 @@ export class ChatAPI {
     }
   }
 
-  // 健康检查
-  static async healthCheck(): Promise<any> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/chat/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('聊天服务健康检查失败:', error)
-      throw error
-    }
-  }
 }
 
 // 模拟API调用（当后端API不可用时使用）

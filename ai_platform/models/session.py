@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 import json
 from loguru import logger
+from sqlalchemy import select,text
+
 Base = declarative_base()
 
 
@@ -135,6 +137,84 @@ class SessionManager:
         except Exception as e:
             logger.exception(f"获取会话列表失败: {e}")
             return []
+
+    #查询历史会话
+    async def get_session_history(self, session_id: str) -> List[dict]:
+        """获取会话历史记录"""
+        try:
+            engine = await self._get_engine()
+            async with AsyncSession(engine) as session:
+                result = await session.execute(text("SELECT * FROM chat_history WHERE key = :session_id ORDER BY id ASC"), {"session_id": session_id})
+                rows = result.fetchall()
+                
+                history = []
+                for row in rows:
+                    row_dict = dict(row._mapping)
+                    data_field = row_dict.get("data", {})
+                    
+                    timestamp_ns = 0
+                    if row_dict.get("timestamp"):
+                        if isinstance(row_dict["timestamp"], int):
+                            if row_dict["timestamp"] > 1e18:
+                                timestamp_ns = row_dict["timestamp"]
+                            else:
+                                timestamp_ns = int(row_dict["timestamp"] * 1e9)
+                        elif hasattr(row_dict["timestamp"], "timestamp"):
+                            timestamp_ns = int(row_dict["timestamp"].timestamp() * 1e9)
+                    
+                    history_item = {
+                        "id": row_dict.get("id"),
+                        "key": row_dict.get("key", session_id),
+                        "timestamp": timestamp_ns,
+                        "role": row_dict.get("role", "user"),
+                        "status": row_dict.get("status", "active"),
+                        "data": data_field if isinstance(data_field, dict) else {}
+                    }
+                    history.append(history_item)
+                
+                return history
+        except Exception as e:
+            logger.exception(f"获取会话历史记录失败: {e}")
+            return []
+
+    async def save_chat_message(self, session_id: str, role: str, message_text: str):
+        """保存聊天消息到历史记录"""
+        try:
+            engine = await self._get_engine()
+            async with AsyncSession(engine) as db_session:
+                import time
+                import json
+                
+                message_data = {
+                    "role": role,
+                    "additional_kwargs": {},
+                    "blocks": [
+                        {
+                            "block_type": "text",
+                            "text": message_text
+                        }
+                    ]
+                }
+                
+                insert_sql = text(
+                    "INSERT INTO chat_history (key, timestamp, role, status, data) "
+                    "VALUES (:key, :timestamp, :role, :status, :data)"
+                )
+                
+                await db_session.execute(insert_sql, {
+                    "key": session_id,
+                    "timestamp": int(time.time() * 1e9),
+                    "role": role,
+                    "status": "active",
+                    "data": json.dumps(message_data, ensure_ascii=False)
+                })
+                await db_session.commit()
+                logger.info(f"保存聊天消息: session={session_id}, role={role}")
+        except Exception as e:
+            logger.exception(f"保存聊天消息失败: {e}")
+
+
+
 
 session_manager = SessionManager()
 

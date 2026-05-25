@@ -27,11 +27,11 @@ class ResourceManager(BaseModel):
     embedding: DashScopeEmbedding = Field(description="embedding client")
     doc_store: PostgresDocumentStore = Field(description="document store client")
     vector_db: PGVectorStore = Field(description="vector database client")
-    # chat_context_db: PGVectorStore = Field(default=None, description="chat context vector database client")
+    chat_context_db: PGVectorStore = Field(default=None, description="chat context vector database client")
     # graph_db: Optional[GraphStore] = Field(default=None, description="graph database client")
     # graph_property_db: Optional[PropertyGraphStore] = Field(default=None, description="graph property database client")
     storage_context: Optional[StorageContext] = Field(default=None, description="storage context manager")
-    # db_engine: AsyncEngine | None = Field(default=None, description="database engine")
+    db_engine: AsyncEngine | None = Field(default=None, description="database engine")
     # mino_service: MinioService = Field(description="MinIO service")
     # knowledge_base: object = Field(description="knowledge base service")
     vector_index: VectorStoreIndex | None = Field(default=None, description="vector index client")
@@ -74,15 +74,16 @@ def init_resource():
                 port=settings.postgres_port,
                 hybrid_search=True,
             ),
-            # chat_context_db=PGVectorStore.from_params(
-            #     database=settings.postgres_db,
-            #     user=settings.postgres_user,
-            #     password=settings.postgres_password,
-            #     table_name="chat_context_store",
-            #     host=settings.postgres_host,
-            #     port=settings.postgres_port,
-            #     hybrid_search=True,
-            # ),
+            # 聊天上下文向量数据库
+            chat_context_db=PGVectorStore.from_params(
+                database=settings.postgres_db,
+                user=settings.postgres_user,
+                password=settings.postgres_password,
+                table_name="chat_context_store",
+                host=settings.postgres_host,
+                port=settings.postgres_port,
+                hybrid_search=True,
+            ),
             doc_store=PostgresDocumentStore.from_params(
                 database=settings.postgres_db,
                 user=settings.postgres_user,
@@ -103,7 +104,7 @@ def init_resource():
             #     url=settings.neo4j_url
             # ),
             llm=DashScope(model_name=DashScopeGenerationModels.QWEN_MAX,
-                          api_key=os.getenv("Deepseek_APIKEY"),
+                          api_key=os.getenv("DASHSCOPE_APIKEY"),
                           stream=False,
                           max_tokens=2000,  # 增加输出长度限制，支持更长的回复
                           temperature=0.2,  # 设置温度参数，让回复更稳定
@@ -116,11 +117,11 @@ def init_resource():
             #     model="BAAI/bge-reranker-base",
             #     top_n=5
             # ),
-
+            
             # # kafka_service=KafkaService(),
             # mino_service=MinioService(),
             # knowledge_base=KnowledgeService(),
-            # db_engine=create_engine()
+            db_engine=create_engine()
 
         )
         _resource_instance.storage_context = StorageContext.from_defaults(
@@ -208,10 +209,10 @@ def get_vector_index() -> VectorStoreIndex:
 #     return _resource_instance.tree_index
 
 
-# def get_db_engine() -> AsyncEngine:
-#     if _resource_instance is None or _resource_instance.db_engine is None:
-#         raise RuntimeError("Database engine has not been initialized.")
-#     return _resource_instance.db_engine
+def get_db_engine() -> AsyncEngine:
+    if _resource_instance is None or _resource_instance.db_engine is None:
+        raise RuntimeError("Database engine has not been initialized.")
+    return _resource_instance.db_engine
 
 
 # def get_cross_encoder_reranker() -> BaseNodePostprocessor:
@@ -231,7 +232,7 @@ def get_vector_index() -> VectorStoreIndex:
 #         raise RuntimeError("Document store has not been initialized.")
 #     return _resource_instance.doc_store
 
-# def get_chat_context_db() -> PGVectorStore:
-#     if _resource_instance is None or _resource_instance.chat_context_db is None:
-#         raise RuntimeError("Chat context vector database has not been initialized.")
-#     return _resource_instance.chat_context_db
+def get_chat_context_db() -> PGVectorStore:
+    if _resource_instance is None or _resource_instance.chat_context_db is None:
+        raise RuntimeError("Chat context vector database has not been initialized.")
+    return _resource_instance.chat_context_db

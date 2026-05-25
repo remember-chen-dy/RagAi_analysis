@@ -18,7 +18,7 @@ class Setting(PydanticBaseSettings):
 
     #知识库默认配置
     #Minio配置
-    minio_endpoint: str = Field(default="192.168.1.5:9000", description="Minio端点")
+    minio_endpoint: str = Field(default="localhost:9000", description="Minio端点")
     minio_access_key: str = Field(default="minioadmin", description="Minio访问密钥")
     minio_secret_key: str = Field(default="minioadmin", description="Minio秘密密钥")
     minio_secure: bool = Field(default=False, description="Minio是否使用HTTPS")
