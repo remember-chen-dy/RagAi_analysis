@@ -8,12 +8,15 @@ from fastapi import FastAPI, Request, HTTPException
 from ai_platform.api.auth import router as auth_router
 from ai_platform.api.knowledge import router as knowledge_router
 from ai_platform.api.upload import router as upload_router
+from ai_platform.api.chart import router as chart_router
 from ai_platform.config.setting import settings
 from ai_platform.config.swagger_config import setup_swagger, SWAGGER_CONFIG
 from fastapi.middleware.cors import CORSMiddleware
 from ai_platform.models.user import user_manager
 from ai_platform.services.konwledge_service import knowledge_service
+from ai_platform.models.session import session_manager
 from ai_platform.config.resource import init_resource
+
 # 配置日志
 logger.remove()
 logger.add(
@@ -29,7 +32,7 @@ async def lifespan(app: FastAPI):
     init_resource()
     await user_manager.init_tables()  # ← 添加 await
     await knowledge_service.init_knowledge_tables()  # ← 添加 await
-
+    await session_manager.init_tables()  # ← 添加 await
     logger.info("应用启动完成")
     yield  # ← 必须有 yield
 
@@ -55,6 +58,7 @@ setup_swagger(app)
 app.include_router(auth_router, prefix="/users")
 app.include_router(knowledge_router, prefix="/knowledge")
 app.include_router(upload_router, prefix="/files")
+app.include_router(chart_router, prefix="/charts")
 
 # CORS 配置
 app.add_middleware(

@@ -61,6 +61,17 @@ export interface ChatHistoryResponse {
   timestamp?: string
 }
 
+function parseKnowledgeBaseIds(raw: any): string[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 // 聊天API接口
 export class ChatAPI {
   private static baseURL = API_BASE_URL
@@ -79,13 +90,13 @@ export class ChatAPI {
         payload.knowledge_base_ids = knowledgeBaseIds
       }
 
-      const response = await fetch(`${this.baseURL}/api/chat/new-session`, {
+      const response = await fetch(`${this.baseURL}/charts/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined,
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -209,7 +220,7 @@ export class ChatAPI {
   // 获取会话列表
   static async getSessions(): Promise<ChatSession[]> {
     try {
-      const response = await fetch(`${this.baseURL}/api/chat/sessions`, {
+      const response = await fetch(`${this.baseURL}/charts/all`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -221,13 +232,21 @@ export class ChatAPI {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data: SessionListResponse = await response.json()
-      
+      const data = await response.json()
+
       if (!data.success) {
         throw new Error('获取会话列表失败')
       }
 
-      return data.data
+      return (data.data || []).map((s: any) => ({
+        id: s.session_id,
+        created_at: s.created_at,
+        last_activity: s.last_activity,
+        message_count: s.message_count,
+        last_message: s.last_message,
+        last_message_role: s.last_message_role,
+        knowledge_base_ids: parseKnowledgeBaseIds(s.knowledge_base_ids),
+      }))
     } catch (error) {
       console.error('获取会话列表失败:', error)
       return []

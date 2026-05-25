@@ -172,6 +172,9 @@ class KnowledgeService:
                 
                 # 2. 获取知识库设置
                 kb_settings = KnowledgeBaseSettings(**(knowledge_base.settings or {}))
+                
+                # 2.5 删除该知识库的旧向量数据
+                await self._clear_vector_nodes(knowledge_base_id)
 
                 # 3. 获取知识库所有文件的路径
                 query = select(KnowledgeBaseFile.file_path).where(
@@ -208,6 +211,26 @@ class KnowledgeService:
                 
         except Exception as e:
             logger.exception(f"构建知识库失败: {e}")
+            raise
+
+    async def _clear_vector_nodes(self, knowledge_base_id: UUID):
+        """删除知识库的所有旧向量节点"""
+        try:
+            vector_store = get_vector_store()
+            filters = MetadataFilters(
+                filters=[
+                    MetadataFilter(
+                        key="knowledge_base_id",
+                        value=str(knowledge_base_id),
+                        operator=FilterOperator.EQ,
+                    )
+                ]
+            )
+            await vector_store.adelete_nodes(filters=filters)
+            logger.info(f"已清除知识库 {knowledge_base_id} 的旧向量数据")
+        except Exception as e:
+            logger.warning(f"清除旧向量数据失败（可能无旧数据）: {e}")
+
     #读取知识库内容
     async def read_knowledge_base(self, knowledge_base_id: UUID, page: int = 1, page_size: int = 20):
         """读取知识库内容 — 从 data_vector_store 表中按 knowledge_base_id 过滤并分页"""

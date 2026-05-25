@@ -347,121 +347,18 @@
                 </div>
 
                 <!-- 分页控件 -->
-                <div v-if="totalPages > 1 && !isLoadingDocuments"
-                     class="border-t border-gray-100 px-6 py-4 flex-shrink-0 pagination-container">
-                  <div class="flex items-center justify-between pagination-controls">
-                    <!-- 分页信息 -->
-                    <div class="text-sm text-gray-700 pagination-info">
-                      显示第 {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalItems) }} 条，
-                      共 {{ totalItems }} 条{{ dataContentSearchQuery.trim() ? '搜索结果' : '数据' }}
-                    </div>
-
-                    <!-- 分页控件 -->
-                    <div class="flex items-center space-x-2">
-                      <!-- 每页显示数量选择 -->
-                      <div class="flex items-center space-x-2 mr-4">
-                        <span class="text-sm text-gray-600">每页</span>
-                        <select
-                            v-model="pageSize"
-                            @change="currentPage = 1; dataContentSearchQuery.trim() ? performSearch(1) : refreshDocuments(1)"
-                            class="text-sm rounded px-2 py-1 outline-none page-size-selector"
-                        >
-                          <option :value="5">5</option>
-                          <option :value="10">10</option>
-                          <option :value="20">20</option>
-                          <option :value="50">50</option>
-                        </select>
-                        <span class="text-sm text-gray-600">条</span>
-                      </div>
-
-                      <!-- 第一页 -->
-                      <button
-                          @click="goToFirstPage"
-                          :disabled="currentPage === 1"
-                          class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed page-button"
-                          title="第一页"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
-                        </svg>
-                      </button>
-
-                      <!-- 上一页 -->
-                      <button
-                          @click="goToPrevPage"
-                          :disabled="currentPage === 1"
-                          class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed page-button"
-                          title="上一页"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                      </button>
-
-                      <!-- 页码 -->
-                      <div class="flex items-center space-x-1">
-                        <template v-for="page in getVisiblePages()" :key="page">
-                          <button
-                              v-if="page !== '...'"
-                              @click="goToPage(page as number)"
-                              :class="{
-                              'bg-gray-900 text-white active': page === currentPage,
-                              'border-gray-200 hover:bg-gray-50': page !== currentPage
-                            }"
-                              class="px-3 py-1 text-sm border rounded page-button"
-                          >
-                            {{ page }}
-                          </button>
-                          <span v-else class="px-2 text-gray-400">...</span>
-                        </template>
-                      </div>
-
-                      <!-- 下一页 -->
-                      <button
-                          @click="goToNextPage"
-                          :disabled="currentPage === totalPages"
-                          class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed page-button"
-                          title="下一页"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                      </button>
-
-                      <!-- 最后一页 -->
-                      <button
-                          @click="goToLastPage"
-                          :disabled="currentPage === totalPages"
-                          class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed page-button"
-                          title="最后一页"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-                        </svg>
-                      </button>
-
-                      <!-- 跳转到指定页 -->
-                      <div class="flex items-center space-x-2 ml-4">
-                        <span class="text-sm text-gray-600">跳转到</span>
-                        <input
-                            type="number"
-                            :min="1"
-                            :max="totalPages"
-                            v-model.number="jumpToPageNumber"
-                            @keyup.enter="goToPage(jumpToPageNumber)"
-                            class="w-16 px-2 py-1 text-sm rounded outline-none jump-input"
-                            placeholder="页码"
-                        />
-                        <button
-                            @click="goToPage(jumpToPageNumber)"
-                            class="px-3 py-1 text-sm bg-gray-900 text-white rounded hover:bg-gray-800 page-button"
-                        >
-                          跳转
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div class="border-t border-gray-100 px-6 py-4 flex-shrink-0">
+                  <a-pagination
+                    v-model:current="currentPage"
+                    v-model:page-size="pageSize"
+                    :total="totalItems"
+                    :page-size-options="['5', '10', '20', '50']"
+                    show-size-changer
+                    show-quick-jumper
+                    :show-total="(total: number) => `共 ${total} 条`"
+                    size="small"
+                    @change="onPaginationChange"
+                  />
                 </div>
               </div>
             </div>
@@ -893,15 +790,20 @@ const showConfirm = (message: string, title: string = '确认', onConfirm?: () =
   })
 }
 
-// 在script setup部分添加分页相关的响应式变量
+// 分页状态
 const currentPage = ref(1)
-const pageSize = ref(10) // 每页显示的数据条数
+const pageSize = ref(10)
 const totalItems = ref(0)
-const totalPages = computed(() => {
-  // 统一基于totalItems计算总页数
-  return Math.ceil(totalItems.value / pageSize.value)
-})
-const jumpToPageNumber = ref<number | null>(null)
+
+const onPaginationChange = (page: number, size: number) => {
+  currentPage.value = page
+  pageSize.value = size
+  if (dataContentSearchQuery.value.trim()) {
+    performSearch(page)
+  } else {
+    refreshDocuments(page)
+  }
+}
 
 // 计算属性
 const filteredKnowledgeBases = computed(() => {
@@ -922,66 +824,6 @@ const displayedData = computed(() => {
   // 统一使用knowledgeData，无论是搜索还是正常浏览状态
   return knowledgeData.value
 })
-
-// 获取可见的页码列表
-const getVisiblePages = () => {
-  const total = totalPages.value
-  const current = currentPage.value
-  const pages: (number | string)[] = []
-
-  if (total <= 7) {
-    // 如果总页数不超过7页，显示所有页码
-    for (let i = 1; i <= total; i++) {
-      pages.push(i)
-    }
-  } else {
-    // 复杂分页逻辑
-    if (current <= 4) {
-      // 当前页在前面
-      for (let i = 1; i <= 5; i++) {
-        pages.push(i)
-      }
-      pages.push('...')
-      pages.push(total)
-    } else if (current >= total - 3) {
-      // 当前页在后面
-      pages.push(1)
-      pages.push('...')
-      for (let i = total - 4; i <= total; i++) {
-        pages.push(i)
-      }
-    } else {
-      // 当前页在中间
-      pages.push(1)
-      pages.push('...')
-      for (let i = current - 1; i <= current + 1; i++) {
-        pages.push(i)
-      }
-      pages.push('...')
-      pages.push(total)
-    }
-  }
-
-  return pages
-}
-
-// 添加分页相关方法
-const goToPage = async (page: number | null) => {
-  if (!page || page < 1 || page > totalPages.value || page === currentPage.value) return
-
-  if (dataContentSearchQuery.value.trim()) {
-    // 如果是搜索状态，使用搜索分页
-    await performSearch(page)
-  } else {
-    // 如果不是搜索状态，重新获取数据
-    await refreshDocuments(page)
-  }
-}
-
-const goToFirstPage = () => goToPage(1)
-const goToLastPage = () => goToPage(totalPages.value)
-const goToPrevPage = () => goToPage(currentPage.value - 1)
-const goToNextPage = () => goToPage(currentPage.value + 1)
 
 // 获取知识库类型
 const getKnowledgeBaseType = async (kbId: string): Promise<string> => {
@@ -1511,77 +1353,4 @@ onUnmounted(() => {
   background-color: rgba(107, 114, 128, 0.8);
 }
 
-/* 分页控件样式优化 */
-.pagination-container {
-  background: rgba(249, 250, 251, 0.8);
-  backdrop-filter: blur(4px);
-}
-
-/* 页码按钮悬停效果 */
-.page-button {
-  transition: all 0.2s ease;
-}
-
-.page-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* 当前页码按钮特殊样式 */
-.page-button.active {
-  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.3);
-}
-
-/* 分页信息文字样式 */
-.pagination-info {
-  font-variant-numeric: tabular-nums;
-}
-
-/* 每页数量选择器样式 */
-.page-size-selector {
-  background: white;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-
-.page-size-selector:focus {
-  border-color: #1f2937;
-  box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
-}
-
-/* 跳转输入框样式 */
-.jump-input {
-  background: white;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-
-.jump-input:focus {
-  border-color: #1f2937;
-  box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
-}
-
-/* 分页控件样式优化 */
-@media (max-width: 768px) {
-  .pagination-container {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .pagination-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .pagination-info {
-    text-align: center;
-  }
-}
-</style> 
+</style>

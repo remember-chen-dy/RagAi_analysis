@@ -1,5 +1,5 @@
 from llama_index.core import Document, SimpleDirectoryReader
-from llama_index.readers.file import PDFReader, DocxReader, ImageReader
+from llama_index.readers.file import PDFReader, DocxReader, ImageReader, MarkdownReader
 from loguru import logger
 
 from typing import List, Optional, Dict
@@ -35,6 +35,7 @@ class DataLoader:
             ".docx": DocxReader(),
             ".png": ImageReader(),
             ".jpg": ImageReader(),
+            '.md': MarkdownReader(),
             # ".json": JSONReader(),
         }
         reader=SimpleDirectoryReader(
