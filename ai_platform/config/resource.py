@@ -7,6 +7,11 @@ from llama_index.core.postprocessor import SentenceTransformerRerank, LLMRerank
 from llama_index.core.postprocessor.types import BaseNodePostprocessor
 from llama_index.embeddings.dashscope import DashScopeEmbedding
 from llama_index.llms.dashscope import DashScope, DashScopeGenerationModels
+from llama_index.multi_modal_llms.dashscope import (
+    DashScopeMultiModal,
+    DashScopeMultiModalModels,
+)
+import dashscope
 from llama_index.storage.docstore.postgres import PostgresDocumentStore
 from llama_index.vector_stores.postgres import PGVectorStore
 from loguru import logger
@@ -25,6 +30,7 @@ class ResourceManager(BaseModel):
 
     llm: DashScope = Field(description="llm client")
     embedding: DashScopeEmbedding = Field(description="embedding client")
+    vl_client: DashScopeMultiModal = Field(description="multi-modal llm client")
     doc_store: PostgresDocumentStore = Field(description="document store client")
     vector_db: PGVectorStore = Field(description="vector database client")
     chat_context_db: PGVectorStore = Field(default=None, description="chat context vector database client")
@@ -59,7 +65,6 @@ def create_engine() -> AsyncEngine:
         }
     )
     return engine
-
 
 def init_resource():
     global _resource_instance
@@ -103,15 +108,21 @@ def init_resource():
             #     password=settings.neo4j_password,
             #     url=settings.neo4j_url
             # ),
-            llm=DashScope(model_name=DashScopeGenerationModels.QWEN_MAX,
-                          api_key=os.getenv("DASHSCOPE_APIKEY"),
-                          stream=False,
-                          max_tokens=2000,  # 增加输出长度限制，支持更长的回复
-                          temperature=0.2,  # 设置温度参数，让回复更稳定
+            llm=DashScope(
+                            model_name=DashScopeGenerationModels.QWEN_MAX,
+                            api_key=os.getenv("DASHSCOPE_APIKEY"),
+                            stream=False,
+                            max_tokens=2000,  # 增加输出长度限制，支持更长的回复
+                            temperature=0.2,  # 设置温度参数，让回复更稳定
                           ),
             embedding=DashScopeEmbedding(
                 model_name="text-embedding-v2",
                 api_key=os.getenv("DASHSCOPE_APIKEY"),
+            ),
+            vl_client=DashScopeMultiModal(
+                model_name='qwen3-vl-8b-instruct',
+                api_key=os.getenv("DASHSCOPE_APIKEY"),
+                stream=False,
             ),
             # cross_encoder_reranker=SentenceTransformerRerank(
             #     model="BAAI/bge-reranker-base",
@@ -170,6 +181,11 @@ def get_embedding() -> DashScopeEmbedding:
     if _resource_instance is None:
         raise RuntimeError("Embedding model has not been initialized.")
     return _resource_instance.embedding
+
+def get_vl_client() -> DashScopeMultiModal:
+    if _resource_instance is None:
+        raise RuntimeError("Resource manager has not been initialized. Call init_resource() first.")
+    return _resource_instance.vl_client
 
 
 

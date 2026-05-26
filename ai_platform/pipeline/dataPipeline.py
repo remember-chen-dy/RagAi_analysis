@@ -8,7 +8,6 @@ import tempfile
 from loguru import logger
 from ai_platform.pipeline.loader import DataLoader
 from ai_platform.pipeline.transformer import TransformerComponent
-import asyncio
 from ai_platform.config.resource import get_vector_index
 
 class FileDataPipeline:
@@ -22,6 +21,7 @@ class FileDataPipeline:
     async def process_minio_file(self):
         """处理MinIO文件"""
         file_paths = []
+        node_data=[]
         for object_name in self.file_path:
             file_path = await self._download_from_minio(object_name)
             file_paths.append(file_path)
@@ -32,14 +32,17 @@ class FileDataPipeline:
         transformer_component = TransformerComponent(self.settings)
         pipeline = transformer_component.create_pipeline(documents)
         nodes = pipeline.run()
+
         logger.info(f"转换完成，共 {len(nodes)} 个节点")
-
         for node in nodes:
-            node.metadata['knowledge_base_id'] = self.knowledge_base_id
+            if node.text and len(node.text.strip()) > 10:
+                node.metadata['knowledge_base_id'] = self.knowledge_base_id
+                node_data.append(node)
 
-        self.insert_nodes_background(nodes, self.settings.index_type)
-        return nodes
 
+        await self._store_to_vector_db(node_data, self.settings.index_type)
+        
+        return node_data
 
     async def _download_from_minio(self, object_name: str) -> str:
 
@@ -57,7 +60,7 @@ class FileDataPipeline:
                 f.write(file_data)
 
             logger.info(f"文件下载到: {temp_file_path}")
-            return str(temp_file_path)  # 返回完整文件路径
+            return str(temp_file_path)
 
         except Exception as e:
             logger.exception(f"从MinIO下载文件失败: {e}")
@@ -69,14 +72,11 @@ class FileDataPipeline:
             if not nodes:
                 logger.info("节点列表为空，无需插入")
                 return
-            if index_type =='vector':
+            logger.info(f"开始插入 {len(nodes)} 个节点到向量数据库")
+            if index_type == 'vector':
                 await get_vector_index().ainsert_nodes(nodes)
+                logger.info(f"成功插入 {len(nodes)} 个节点到向量数据库")
+            
         except Exception as e:
             logger.exception(f"插入向量数据库失败: {e}")
             raise
-
-
-    def insert_nodes_background(self, nodes: List[Document], index_type: str):
-        """异步插入节点到向量数据库"""
-        logger.info(f"开始插入 {len(nodes)} 个节点到向量数据库")
-        asyncio.create_task(self._store_to_vector_db(nodes, index_type))

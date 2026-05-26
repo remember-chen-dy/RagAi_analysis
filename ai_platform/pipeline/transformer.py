@@ -45,7 +45,7 @@ class TransformerComponent:
             tansformations.append(
                 SemanticSplitterNodeParser(
                     buffer_size=7,
-                    breakpoint_percentile_threshold=95,
+                    breakpoint_percentile_threshold=90,
                     embed_model=get_embedding(),
                 )
             )

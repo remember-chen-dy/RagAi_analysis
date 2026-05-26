@@ -55,4 +55,7 @@ dependencies = [
     "email-validator>=2.2.0",
     "requests>=2.31.0",
     "pydub>=0.25.1",
+    "pymupdf>=1.27.2.3",
+    "llama-index-multi-modal-llms-dashscope>=0.4.1",
+    "docx2txt>=0.9",
 ]
