@@ -58,7 +58,7 @@
           <span v-if="isDragOver" class="text-gray-900 font-medium">释放添加</span>
           <span v-else>拖拽或<span class="text-gray-900 font-medium underline cursor-pointer" @click.stop="triggerFileInput">点击选择</span></span>
         </p>
-        <p class="text-xs text-gray-400">多文件 · 最大15MB</p>
+        <p class="text-xs text-gray-400">多文件 </p>
       </div>
     </div>
 

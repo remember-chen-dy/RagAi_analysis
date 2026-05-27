@@ -58,4 +58,5 @@ dependencies = [
     "pymupdf>=1.27.2.3",
     "llama-index-multi-modal-llms-dashscope>=0.4.1",
     "docx2txt>=0.9",
+    "ragas>=0.4.3",
 ]

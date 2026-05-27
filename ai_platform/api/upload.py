@@ -47,7 +47,7 @@ async def upload_file(
                 continue
 
             file_data = await file.read()
-
+            
             upload_info = await minio_service.upload_file(
                 kb_id,
                 settings.minio_bucket,

@@ -160,6 +160,7 @@ class KnowledgeService:
             logger.exception(f"获取知识库详情失败: {e}")
             raise
 
+            #构建知识库
     async def build_knowledge_base(self, knowledge_base_id: UUID):
         """构建知识库"""
         try:
@@ -273,6 +274,23 @@ class KnowledgeService:
             raise
 
     #文件管理
+    async def check_file_exists(self, knowledge_base_id: UUID, filename: str) -> bool:
+        """检查文件是否已存在于知识库中"""
+        try:
+            await self._get_engine()
+            async with AsyncSession(self.engine) as session:
+                smt = select(KnowledgeBaseFile).where(
+                    and_(
+                        KnowledgeBaseFile.knowledge_base_id == knowledge_base_id,
+                        KnowledgeBaseFile.original_filename == filename,
+                    )
+                )
+                result = await session.execute(smt)
+                return result.scalar() is not None
+        except Exception as e:
+            logger.exception(f"检查文件是否存在失败: {e}")
+            return False
+
     async def create_file_record(self, file_create: KnowledgeBaseFileCreate):
         """创建文件记录"""
         try:

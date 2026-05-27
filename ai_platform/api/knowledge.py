@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic.types import Json  # ✅ 添加 UUID 导入
 from ai_platform.types.common import ApiResponse
 from ai_platform.services.konwledge_service import knowledge_service
+from ai_platform.evaluation import ragas_evaluator, EvaluationRequest
 
 router = APIRouter()
 
@@ -139,7 +140,7 @@ async def build_knowledge_base(knowledge_base_id: UUID):
     """构建知识库"""
     try:
         result = await knowledge_service.build_knowledge_base(knowledge_base_id)
-
+        
         return ApiResponse(
             success=True,
             code=200,
@@ -174,3 +175,20 @@ async def read_knowledge_base(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"知识库读取失败: {str(e)}")
+
+
+# 评估知识库
+@router.post("/evaluate", response_model=ApiResponse[Any])
+async def evaluate_knowledge_base(request: EvaluationRequest):
+    """评估知识库"""
+    try:
+        result = await ragas_evaluator.evaluate(request)
+        return ApiResponse(
+            success=True,
+            code=200,
+            message=f"知识库评估完成，共评估 {result.sample_count} 个样本",
+            data=result,
+            timestamp=datetime.datetime.now()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"RAGAS评估失败: {str(e)}")

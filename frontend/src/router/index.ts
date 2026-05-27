@@ -2,6 +2,7 @@ import {createRouter, createWebHistory} from 'vue-router'
 import FileManager from '@/views/FileManager.vue'
 import ChatBot from '@/views/ChatBot.vue'
 import KnowledgeBase from '@/views/KnowledgeBase.vue'
+import Evaluation from '@/views/Evaluation.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 
@@ -52,6 +53,15 @@ const routes = [
     component: KnowledgeBase,
     meta: {
       title: '知识库管理',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/evaluation',
+    name: 'Evaluation',
+    component: Evaluation,
+    meta: {
+      title: 'RAG评估',
       requiresAuth: true
     }
   }

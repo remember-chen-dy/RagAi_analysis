@@ -137,7 +137,7 @@ class SessionManager:
         except Exception as e:
             logger.exception(f"获取会话列表失败: {e}")
             return []
-
+    
     #查询历史会话
     async def get_session_history(self, session_id: str) -> List[dict]:
         """获取会话历史记录"""

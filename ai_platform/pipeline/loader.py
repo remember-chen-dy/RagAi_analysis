@@ -196,7 +196,7 @@ class DataLoader:
             '.md': MarkdownReader(),
             # ".json": JSONReader(),
         }
-        reader=SimpleDirectoryReader(
+        reader=SimpleDirectoryReader(   
             input_files=file_paths,
             recursive=True,
             file_extractor=file_extractor
