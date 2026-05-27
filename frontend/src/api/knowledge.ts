@@ -66,7 +66,7 @@ export interface CreateKnowledgeBaseRequest {
     chunk_overlap?: number
     text_split_strategy?: string
     split_chars?: string[]
-    index_type?: 'vector' | 'knowledge_graph' | 'long_document'
+    index_type?: 'vector' | 'hybrid'
   }
 }
 
@@ -83,7 +83,7 @@ export interface KnowledgeBaseSettings {
   chunk_overlap: number
   text_split_strategy: 'fixed_chars' | 'semantic'
   split_chars: string[]
-  index_type: 'vector' | 'knowledge_graph' | 'long_document'
+  index_type: 'vector' | 'hybrid'
 }
 
 // 知识库设置响应

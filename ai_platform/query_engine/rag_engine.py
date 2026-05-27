@@ -8,7 +8,8 @@ from ai_platform.config.resource import (
     get_llm,
     get_embedding,
     get_chat_context_db,
-    get_db_engine
+    get_db_engine,
+    get_llm_reranker,
 )
 from llama_index.core.memory import Memory, StaticMemoryBlock, FactExtractionMemoryBlock, VectorMemoryBlock
 from llama_index.core.vector_stores import MetadataFilters, MetadataFilter, FilterOperator
@@ -120,6 +121,7 @@ class VectorRagEngine(BaseRagEngine):
             chat_engine = CondensePlusContextChatEngine.from_defaults(
                 retriever=retriever,
                 memory=self.memory_block,
+                node_postprocessors=[LongContextReorder(), get_llm_reranker()],
                 llm=self.llm,
                 verbose=True,
             )
@@ -142,7 +144,6 @@ class VectorStoreRetriever:
 
     async def aretrieve(self, query_str: str) -> List[NodeWithScore]:
         """异步检索"""
-        logger.info(f"VectorStoreRetriever query: {query_str}")
 
         try:
             nodes = await self.vector_store.aquery(
@@ -214,7 +215,7 @@ class HybridRagEngine(BaseRagEngine):
             retriever=hybrid_retriever,
             memory=self.memory_block,
             llm=self.llm,
-            node_postprocessors=[LongContextReorder()],
+            node_postprocessors=[LongContextReorder(), get_llm_reranker()],
             verbose=True,
         )
 
@@ -262,7 +263,7 @@ class RagEngineFactory:
             engine_impl = HybridRagEngine(self.session_id)
         else:
             raise ValueError(f"Unsupported index_type: {index_type}")
-
+        
         query_engine = engine_impl.create_engine(
             knowledge_base_ids=knowledge_base_ids,
             similarity_top_k=similarity_top_k

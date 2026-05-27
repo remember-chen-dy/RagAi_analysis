@@ -257,8 +257,9 @@
             <div
               v-for="kb in filteredKnowledgeBases"
               :key="kb.id"
-              @click="toggleKnowledgeBase(kb.id)"
-              class="flex items-start gap-2 p-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
+              @click="kb.status !== 'building' && toggleKnowledgeBase(kb.id)"
+              class="flex items-start gap-2 p-2 rounded-lg transition-colors"
+              :class="kb.status === 'building' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'"
             >
               <div
                 class="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors"
@@ -271,7 +272,8 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
                   <p class="text-sm font-medium text-gray-900 truncate">{{ kb.name }}</p>
-                  <span class="text-xs px-1.5 py-0.5 rounded" :class="kb.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'">
+                  <span v-if="kb.status === 'building'" class="text-xs px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-600">构建中</span>
+                  <span v-else class="text-xs px-1.5 py-0.5 rounded" :class="kb.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'">
                     {{ kb.status === 'active' ? '可用' : '不可用' }}
                   </span>
                 </div>
@@ -493,8 +495,9 @@ const saveSessionKnowledgeBases = async () => {
 }
 
 const toggleAllKnowledgeBases = async () => {
-  if (selectedKnowledgeBases.value.length < knowledgeBases.value.length) {
-    selectedKnowledgeBases.value = knowledgeBases.value.map(kb => kb.id)
+  const availableKbs = knowledgeBases.value.filter(kb => kb.status !== 'building')
+  if (selectedKnowledgeBases.value.length < availableKbs.length) {
+    selectedKnowledgeBases.value = availableKbs.map(kb => kb.id)
   } else {
     selectedKnowledgeBases.value = []
   }

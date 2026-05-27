@@ -112,9 +112,9 @@ class KnowledgeService:
                 knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
                 if knowledge_base is None:
                     raise ValueError(f"知识库 {knowledge_base_id} 不存在")
-                if name:
+                if name is not None:
                     knowledge_base.name = name
-                if description:
+                if description is not None:
                     knowledge_base.description = description
                 await session.commit()
                 return knowledge_base

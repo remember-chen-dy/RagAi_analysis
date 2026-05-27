@@ -34,7 +34,7 @@
         <option value="" disabled>
           {{ isLoadingKnowledgeBases ? '加载中...' : (knowledgeBases.length === 0 ? '暂无知识库' : '请选择') }}
         </option>
-        <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">{{ kb.name }}</option>
+        <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id" :disabled="kb.status === 'building'">{{ kb.name }}{{ kb.status === 'building' ? ' (构建中)' : '' }}</option>
       </select>
     </div>
 
@@ -49,7 +49,7 @@
         @dragleave="handleDragLeave"
         @click="triggerFileInput"
     >
-      <input ref="fileInput" type="file" multiple class="hidden" @change="handleFileSelect" />
+      <input ref="fileInput" type="file" multiple accept=".pdf,.txt,.md,.docx,.doc,.csv,.json,.xml,.html,.htm,.py,.js,.ts,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sh,.yaml,.yml,.toml,.ini,.cfg,.log,.rtf,.odt,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg" class="hidden" @change="handleFileSelect" />
       <div class="flex flex-col items-center gap-1">
         <svg class="w-6 h-6 text-gray-400" :class="{ 'animate-pulse text-gray-900': isDragOver }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -218,17 +218,16 @@ const loadKnowledgeBases = async () => {
       const lastSelectedId = localStorage.getItem('lastSelectedKnowledgeBase')
 
       if (lastSelectedId) {
-        // 查找最后选择的知识库
-        const targetKnowledgeBase = knowledgeBases.value.find(kb => kb.id === lastSelectedId)
+        const targetKnowledgeBase = knowledgeBases.value.find(kb => kb.id === lastSelectedId && kb.status !== 'building')
         if (targetKnowledgeBase) {
           selectedKnowledgeBase.value = lastSelectedId
         } else {
-          // 如果最后选择的知识库不存在了，选择第一个
-          selectedKnowledgeBase.value = knowledgeBases.value[0].id
+          const firstAvailable = knowledgeBases.value.find(kb => kb.status !== 'building')
+          selectedKnowledgeBase.value = firstAvailable ? firstAvailable.id : ''
         }
       } else {
-        // 如果没有记录，选择第一个
-        selectedKnowledgeBase.value = knowledgeBases.value[0].id
+        const firstAvailable = knowledgeBases.value.find(kb => kb.status !== 'building')
+        selectedKnowledgeBase.value = firstAvailable ? firstAvailable.id : ''
       }
     }
 
@@ -259,7 +258,14 @@ const handleFileSelect = (event: Event) => {
 }
 
 const addFiles = (newFiles: File[]) => {
+  const blockedExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v', 'mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a', 'aiff']
   for (const file of newFiles) {
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (blockedExtensions.includes(ext)) {
+      showMessage(`不支持上传视频/音频文件: ${file.name}`, 'error')
+      continue
+    }
+
     if (file.size > 100 * 1024 * 1024) { // 100MB 限制
       showMessage(`文件 ${file.name} 超过大小限制（100MB）`, 'error')
       continue

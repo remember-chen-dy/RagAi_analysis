@@ -34,10 +34,12 @@
                   :key="kb.id"
                   :value="kb.id"
                   :label="kb.name"
+                  :disabled="kb.status === 'building'"
                 >
                   <div class="flex items-center justify-between">
                     <span>{{ kb.name }}</span>
-                    <span class="text-xs text-gray-400">{{ kb.status === 'active' ? '运行中' : kb.status }}</span>
+                    <span v-if="kb.status === 'building'" class="text-xs text-yellow-500">构建中</span>
+                    <span v-else class="text-xs text-gray-400">运行中</span>
                   </div>
                 </a-select-option>
               </a-select>

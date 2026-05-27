@@ -73,9 +73,9 @@ class FileDataPipeline:
                 logger.info("节点列表为空，无需插入")
                 return
             logger.info(f"开始插入 {len(nodes)} 个节点到向量数据库")
-            if index_type == 'vector':
-                await get_vector_index().ainsert_nodes(nodes)
-                logger.info(f"成功插入 {len(nodes)} 个节点到向量数据库")
+            # if index_type == 'vector':
+            await get_vector_index().ainsert_nodes(nodes)
+            logger.info(f"成功插入 {len(nodes)} 个节点到向量数据库")
             
         except Exception as e:
             logger.exception(f"插入向量数据库失败: {e}")

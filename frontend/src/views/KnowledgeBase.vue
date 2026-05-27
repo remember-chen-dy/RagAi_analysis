@@ -474,7 +474,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-3">知识库类型</label>
-              <div class="grid grid-cols-3 gap-3 w-full">
+              <div class="grid grid-cols-2 gap-3 w-full">
                 <div
                   class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
                   :class="newKnowledgeBase.index_type === 'vector' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
@@ -491,31 +491,17 @@
                 </div>
                 <div
                   class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
-                  :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'border-purple-500 bg-purple-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
-                  @click="newKnowledgeBase.index_type = 'knowledge_graph'"
+                  :class="newKnowledgeBase.index_type === 'hybrid' ? 'border-purple-500 bg-purple-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
+                  @click="newKnowledgeBase.index_type = 'hybrid'"
                 >
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
-                       :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'bg-purple-100' : 'bg-gray-100'">
-                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                       :class="newKnowledgeBase.index_type === 'hybrid' ? 'bg-purple-100' : 'bg-gray-100'">
+                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'hybrid' ? 'text-purple-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
                     </svg>
                   </div>
-                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-700' : 'text-gray-800'">知识图谱索引</span>
-                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'knowledge_graph' ? 'text-purple-600' : 'text-gray-500'">自动抽取实体与关系构建知识图谱，支持多跳推理与关联查询，适用于结构化数据分析场景</span>
-                </div>
-                <div
-                  class="border-2 rounded-xl p-4 cursor-pointer transition-all duration-200"
-                  :class="newKnowledgeBase.index_type === 'long_document' ? 'border-green-500 bg-green-50 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'"
-                  @click="newKnowledgeBase.index_type = 'long_document'"
-                >
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
-                       :class="newKnowledgeBase.index_type === 'long_document' ? 'bg-green-100' : 'bg-gray-100'">
-                    <svg class="w-5 h-5" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                  </div>
-                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-700' : 'text-gray-800'">长文档索引</span>
-                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'long_document' ? 'text-green-600' : 'text-gray-500'">采用层次化分块与上下文窗口保持策略，确保长文本语义完整性，适用于论文与书籍分析</span>
+                  <span class="block text-sm font-semibold mb-1.5" :class="newKnowledgeBase.index_type === 'hybrid' ? 'text-purple-700' : 'text-gray-800'">混合检索</span>
+                  <span class="block text-xs leading-relaxed" :class="newKnowledgeBase.index_type === 'hybrid' ? 'text-purple-600' : 'text-gray-500'">结合向量语义检索与关键词全文检索，兼顾语义理解与精确匹配，适用于复杂查询场景</span>
                 </div>
               </div>  
             </div>
@@ -679,16 +665,10 @@
                   <span class="text-xs text-gray-500">使用向量嵌入技术构建索引，适用于大多数文档检索场景，检索速度快，准确性高。</span>
                 </span>
               </a-radio>
-              <a-radio value="knowledge_graph" class="!mr-0">
+              <a-radio value="hybrid" class="!mr-0">
                 <span class="flex flex-col ml-2">
-                  <span class="font-medium text-gray-900">知识图谱索引</span>
-                  <span class="text-xs text-gray-500">构建实体关系图谱，适用于需要理解实体间关系的复杂查询场景，支持推理查询。</span>
-                </span>
-              </a-radio>
-              <a-radio value="long_document" class="!mr-0">
-                <span class="flex flex-col ml-2">
-                  <span class="font-medium text-gray-900">长文档索引</span>
-                  <span class="text-xs text-gray-500">专为长文档优化的检索索引，保持上下文连续性，适用于学术论文、技术文档等长内容。</span>
+                  <span class="font-medium text-gray-900">混合检索</span>
+                  <span class="text-xs text-gray-500">结合向量语义检索与关键词全文检索，兼顾语义理解与精确匹配，适用于复杂查询场景。</span>
                 </span>
               </a-radio>
             </a-radio-group>
@@ -743,7 +723,7 @@ const showSettingsModal = ref(false)
 const newKnowledgeBase = ref({
   name: '',
   description: '',
-  index_type: 'vector' as 'vector' | 'knowledge_graph' | 'long_document'
+  index_type: 'vector' as 'vector' | 'hybrid'
 })
 
 const editingKnowledgeBase = ref<UpdateKnowledgeBaseRequest>({
@@ -766,9 +746,6 @@ const knowledgeBaseSettings = ref<KnowledgeBaseSettings>({
 
 const settingsKnowledgeBaseId = ref<string>('')
 const isSavingSettings = ref(false)
-
-// 存储知识库类型信息的Map
-const knowledgeBaseTypes = ref<Map<string, string>>(new Map())
 
 // 弹窗方法 — 使用 antd Modal 命令式 API
 const showAlert = (message: string, title: string = '提示', type: 'alert' | 'success' | 'error' | 'warning' = 'alert') => {
@@ -825,30 +802,6 @@ const displayedData = computed(() => {
   return knowledgeData.value
 })
 
-// 获取知识库类型
-const getKnowledgeBaseType = async (kbId: string): Promise<string> => {
-  try {
-    const response = await KnowledgeAPI.getKnowledgeBaseSettings(kbId)
-    if (response.success && response.data) {
-      const indexType = response.data.index_type || 'vector'
-      knowledgeBaseTypes.value.set(kbId, indexType)
-      return indexType
-    }
-  } catch (error) {
-    console.error(`获取知识库 ${kbId} 类型失败:`, error)
-  }
-  
-  // 默认返回向量索引
-  knowledgeBaseTypes.value.set(kbId, 'vector')
-  return 'vector'
-}
-
-// 批量获取知识库类型
-const loadKnowledgeBaseTypes = async () => {
-  const promises = knowledgeBases.value.map(kb => getKnowledgeBaseType(kb.id))
-  await Promise.allSettled(promises)
-}
-
 // 方法
 const refreshKnowledgeBases = async () => {
   isLoading.value = true
@@ -857,25 +810,19 @@ const refreshKnowledgeBases = async () => {
     if (response.success) {
       knowledgeBases.value = response.data
 
-      // 批量获取知识库类型信息
-      await loadKnowledgeBaseTypes()
-
       // 自动选择最后选择的知识库，如果没有则选择第一个
       if (knowledgeBases.value.length > 0) {
         const lastSelectedId = localStorage.getItem('lastSelectedKnowledgeBase')
         let targetKnowledgeBase: KnowledgeBase | null = null
 
         if (lastSelectedId) {
-          // 查找最后选择的知识库
           targetKnowledgeBase = knowledgeBases.value.find(kb => kb.id === lastSelectedId) || null
         }
 
-        // 如果没找到最后选择的知识库，则选择第一个
         if (!targetKnowledgeBase) {
           targetKnowledgeBase = knowledgeBases.value[0]
         }
 
-        // 只有在没有已选择的知识库时才自动选择
         if (!selectedKnowledgeBase.value && targetKnowledgeBase) {
           await selectKnowledgeBase(targetKnowledgeBase)
         }
@@ -907,17 +854,12 @@ const createKnowledgeBase = async () => {
       
       const indexTypeNames = {
         'vector': '向量索引',
-        'knowledge_graph': '知识图谱索引', 
-        'long_document': '长文档索引'
+        'hybrid': '混合检索'
       }
       const typeName = indexTypeNames[newKnowledgeBase.value.index_type] || '向量索引'
       
       newKnowledgeBase.value = {name: '', description: '', index_type: 'vector'}
       await refreshKnowledgeBases()
-      
-      if (response.data && response.data.id) {
-        knowledgeBaseTypes.value.set(response.data.id, newKnowledgeBase.value.index_type || 'vector')
-      }
       
       showAlert(`知识库"${requestData.name}"创建成功！类型：${typeName}`, '成功', 'success')
     }
@@ -948,7 +890,10 @@ const updateKnowledgeBase = async () => {
   try {
     const response = await updateKnowledgeBaseAPI(
         editingKnowledgeBaseId.value,
-        editingKnowledgeBase.value
+        {
+          name: editingKnowledgeBase.value.name,
+          description: editingKnowledgeBase.value.description?.trim() || ''
+        }
     )
     if (response.success) {
       showEditModal.value = false
@@ -990,7 +935,7 @@ const deleteKnowledgeBase = async (kb: KnowledgeBase, event?: Event) => {
           }
 
           await refreshKnowledgeBases()
-          showAlert('知识库删除成功', '提示', 'success')
+          message.success('知识库删除成功')
         } else {
           showAlert('删除知识库失败: ' + response.message, '错误', 'error')
         }
@@ -1055,7 +1000,7 @@ const openKnowledgeBaseSettings = async (kb: KnowledgeBase) => {
       chunk_overlap: kb.settings.chunk_overlap ?? defaultSettings.chunk_overlap,
       text_split_strategy: (kb.settings.text_split_strategy as 'fixed_chars' | 'semantic') ?? defaultSettings.text_split_strategy,
       split_chars: kb.settings.split_chars ?? defaultSettings.split_chars,
-      index_type: (kb.settings.index_type as 'vector' | 'knowledge_graph' | 'long_document') ?? defaultSettings.index_type
+      index_type: (kb.settings.index_type as 'vector' | 'hybrid') ?? defaultSettings.index_type
     }
   } else {
     knowledgeBaseSettings.value = { ...defaultSettings }
@@ -1244,7 +1189,8 @@ const getStatusText = (status: string) => {
 
 // 获取知识库类型信息
 const getKnowledgeBaseTypeInfo = (kbId: string) => {
-  const indexType = knowledgeBaseTypes.value.get(kbId) || 'vector'
+  const kb = knowledgeBases.value.find(k => k.id === kbId)
+  const indexType = kb?.settings?.index_type || 'vector'
   
   const typeConfig = {
     'vector': {
@@ -1255,21 +1201,13 @@ const getKnowledgeBaseTypeInfo = (kbId: string) => {
       textClass: 'text-blue-700',
       borderClass: 'border-blue-200'
     },
-    'knowledge_graph': {
-      name: '知识图谱',
-      icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9',
+    'hybrid': {
+      name: '混合检索',
+      icon: 'M4 6h16M4 12h16M4 18h7',
       color: 'purple',
       bgClass: 'bg-purple-50',
       textClass: 'text-purple-700',
       borderClass: 'border-purple-200'
-    },
-    'long_document': {
-      name: '长文档',
-      icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-      color: 'green',
-      bgClass: 'bg-green-50',
-      textClass: 'text-green-700',
-      borderClass: 'border-green-200'
     }
   }
   

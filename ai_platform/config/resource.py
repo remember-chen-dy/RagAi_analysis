@@ -44,7 +44,7 @@ class ResourceManager(BaseModel):
     # property_graph_index: PropertyGraphIndex | None = Field(default=None, description="property graph index client")
     # tree_index: TreeIndex | None = Field(default=None, description="tree index client")
     # cross_encoder_reranker: BaseNodePostprocessor = Field(default=None, description="cross encoder reranker model")
-    # llm_reranker: BaseNodePostprocessor = Field(default=None, description="llm reranker model")
+    llm_reranker: BaseNodePostprocessor = Field(default=None, description="llm reranker model")
 
 
 _resource_instance: Optional[ResourceManager] = None
@@ -110,6 +110,7 @@ def init_resource():
             # ),
             llm=DashScope(
                             model_name=DashScopeGenerationModels.QWEN_MAX,
+                            # model_name="kimi-k2.6",
                             api_key=os.getenv("DASHSCOPE_APIKEY"),
                             stream=False,
                             max_tokens=2000,  # 增加输出长度限制，支持更长的回复
@@ -117,6 +118,7 @@ def init_resource():
                           ),
             embedding=DashScopeEmbedding(
                 model_name="text-embedding-v2",
+                # model_name="tongyi-embedding-vision-plus-2026-03-06",
                 api_key=os.getenv("DASHSCOPE_APIKEY"),
             ),
             vl_client=DashScopeMultiModal(
@@ -154,11 +156,11 @@ def init_resource():
             #     documents=[]
             # )
 
-            # _resource_instance.llm_reranker = LLMRerank(
-            #     llm=_resource_instance.llm,
-            #     choice_batch_size=5,
-            #     top_n=5,
-            # )
+            _resource_instance.llm_reranker = LLMRerank(
+                llm=_resource_instance.llm,
+                choice_batch_size=5,
+                top_n=5,
+            )
 
             logger.info("成功从现有存储加载向量索引")
         except Exception as e:
@@ -237,10 +239,10 @@ def get_db_engine() -> AsyncEngine:
 #     return _resource_instance.cross_encoder_reranker
 
 
-# def get_llm_reranker() -> BaseNodePostprocessor:
-#     if _resource_instance is None or _resource_instance.llm_reranker is None:
-#         raise RuntimeError("LLM reranker has not been initialized.")
-#     return _resource_instance.llm_reranker
+def get_llm_reranker() -> BaseNodePostprocessor:
+    if _resource_instance is None or _resource_instance.llm_reranker is None:
+        raise RuntimeError("LLM reranker has not been initialized.")
+    return _resource_instance.llm_reranker
 
 
 # def get_doc_store() -> PostgresDocumentStore:
