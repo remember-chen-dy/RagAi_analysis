@@ -3,7 +3,8 @@ from typing import Dict
 
 from ai_platform.query_engine.rag_engine import RagEngineFactory
 from ai_platform.services.konwledge_service import knowledge_service
-
+from ai_platform.config.resource import get_llm
+from loguru import logger
 
 class RAGEngineCache:
     """线程安全的RAGQueryEngine缓存类"""
@@ -46,6 +47,7 @@ class ChatInstance:
     def __init__(self, session_id: str):
         self.session_id = session_id
         self.rag_engine_factory = rag_engine_cache.get_engine(session_id)
+        self.llm = get_llm()
 
     async def query(self, query: str, knowledge_base_ids: list = None):
         """
@@ -65,6 +67,19 @@ class ChatInstance:
             knowledge_base_ids=knowledge_base_ids,
             similarity_top_k=5
         )
+        logger.info(f"ChatInstance query: {query}, response: {response}")
+        if response.get('response') == 'Empty Response':
+            empty_template = "根据用户的问题，没有找到相关的信息。你根据用户的问题，回答他的问题并且告诉用户知识库没有检索到相关的信息。用户的问题是：{query}。"
+            prompt = empty_template.format(query=query)
+            
+            llm_response = self.llm.complete(prompt)
+            
+            # 构建和 query() 返回结构一致的字典
+            response = {
+                **response,
+                "response": llm_response.text
+            }
+
         return response
 
     @classmethod

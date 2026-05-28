@@ -71,15 +71,12 @@ class BaseRagEngine(ABC):
             async_engine=self.async_engine,
         )
 
-    def _build_filters(self, knowledge_base_ids: List[str]) -> Optional[MetadataFilters]:
-        if not knowledge_base_ids:
-            return None
-
+    def _build_filters(self, knowledge_base_ids: List[str]) -> MetadataFilters:
         return MetadataFilters(
             filters=[
                 MetadataFilter(
                     key="knowledge_base_id",
-                    value=knowledge_base_ids,
+                    value=knowledge_base_ids if knowledge_base_ids else ["__none__"],
                     operator=FilterOperator.IN,
                 )
             ]
@@ -104,7 +101,9 @@ class VectorRagEngine(BaseRagEngine):
     ):
         """创建向量检索引擎"""
         try:
+          
             filters = self._build_filters(knowledge_base_ids)
+
             logger.info(f"VectorRagEngine filters: {filters}")
 
             vector_store = get_vector_store()
@@ -179,6 +178,8 @@ class HybridRagEngine(BaseRagEngine):
         knowledge_base_ids: List[str],
         similarity_top_k: int = 5
     ):
+        """创建混合检索引擎"""
+        
         filters = self._build_filters(knowledge_base_ids)
 
         vector_store = get_vector_store()

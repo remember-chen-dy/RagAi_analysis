@@ -22,7 +22,8 @@ class DeleteChartRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     """聊天请求模型"""
-    message: str = Field(
+    message: Optional[str] = Field(
+        default=None,
         min_length=1,
         max_length=2000,
         description="用户消息内容",
@@ -106,9 +107,8 @@ async def chat(request: ChatRequest):
         if not session_id:
             session_id = str(uuid.uuid4())
             await session_manager.create_session(session_id, request.knowledge_base_ids)
-
-        # await session_manager.save_chat_message(session_id, "user", request.message)
-
+        
+        #创建聊天实例
         chat_instance = ChatInstance(session_id=session_id)
         result = await chat_instance.query(
             query=request.message,
@@ -158,6 +158,8 @@ async def get_history(request: DeleteChartRequest):
     except Exception as e:
         logger.exception(f"查询历史对话失败: {e}")
         raise HTTPException(status_code=500, detail="查询历史对话失败")
+
+
 
 
 
