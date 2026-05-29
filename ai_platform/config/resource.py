@@ -116,9 +116,9 @@ def init_resource():
                             max_tokens=2000,  # 增加输出长度限制，支持更长的回复
                             temperature=0.2,  # 设置温度参数，让回复更稳定
             ),
-            #多模态向量
+        
             embedding=DashScopeEmbedding(
-                model_name="text-embedding-v4",
+                model_name="text-embedding-v2",
                 api_key=os.getenv("DASHSCOPE_APIKEY"),
             ),
             # embedding=DashScopeMultiModal(

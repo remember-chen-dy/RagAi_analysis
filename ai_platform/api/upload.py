@@ -157,8 +157,3 @@ async def delete_file(
         code=200,
         timestamp=datetime.datetime.now(),
     )
-
-
-
-
-

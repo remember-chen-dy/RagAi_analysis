@@ -181,6 +181,9 @@ class MyPDFReader(BaseReader):
         
         return documents
 
+
+
+
 class DataLoader:
     """数据加载器"""
     
@@ -205,6 +208,7 @@ class DataLoader:
             num_workers=4,
             show_progress=True,
         )
-        logger.info(f"成功加载 {len(documents)} 个文档")
+        
+        logger.info(f"成功加载 {documents} 个文档")
         return documents
 

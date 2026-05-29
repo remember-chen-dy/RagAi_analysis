@@ -1,6 +1,8 @@
+import json
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncEngine
+from llama_index.core import Settings
 
 from ai_platform.config.resource import (
     get_vector_store,
@@ -49,7 +51,7 @@ class BaseRagEngine(ABC):
                     static_content=[TextBlock(
                         text="你是一个AI智能助手，可以友好地基于提供的上下文信息回答用户的问题。"
                              "如果上下文信息中没有相关内容，你可以告诉用户你无法回答该问题。"
-                             "回答要简洁、准确、有帮助。"
+                             "回答要简洁、准确、有帮助。 "
                     )],
                     priority=0,
                 ),
@@ -72,6 +74,7 @@ class BaseRagEngine(ABC):
         )
 
     def _build_filters(self, knowledge_base_ids: List[str]) -> MetadataFilters:
+        """知识库过滤条件"""
         return MetadataFilters(
             filters=[
                 MetadataFilter(
@@ -88,47 +91,8 @@ class BaseRagEngine(ABC):
         knowledge_base_ids: List[str],
         similarity_top_k: int = 5
     ):
+        """创建RAG引擎"""
         pass
-
-
-class VectorRagEngine(BaseRagEngine):
-    """向量检索引擎"""
-
-    def create_engine(
-        self,
-        knowledge_base_ids: List[str],
-        similarity_top_k: int = 5
-    ):
-        """创建向量检索引擎"""
-        try:
-          
-            filters = self._build_filters(knowledge_base_ids)
-
-            logger.info(f"VectorRagEngine filters: {filters}")
-
-            vector_store = get_vector_store()
-            index = get_vector_index()
-
-            retriever = VectorStoreRetriever(
-                vector_store=vector_store,
-                index=index,
-                filters=filters,
-                similarity_top_k=similarity_top_k,
-                embed_model=self.embed_model,
-            )
-
-            chat_engine = CondensePlusContextChatEngine.from_defaults(
-                retriever=retriever,
-                memory=self.memory_block,
-                node_postprocessors=[LongContextReorder(), get_llm_reranker()],
-                llm=self.llm,
-                verbose=True,
-            )
-
-            return chat_engine
-        except Exception as e:
-            logger.exception(f"向量检索引擎创建失败: {e}")
-            raise
 
 
 class VectorStoreRetriever:
@@ -150,7 +114,6 @@ class VectorStoreRetriever:
                 self.similarity_top_k,
                 self.filters
             )
-            logger.info(f"VectorStoreRetriever found {len(nodes)} nodes")
             return nodes
         except Exception as e:
             logger.warning(f"PGVectorStore aquery failed: {e}, fallback to index retriever")
@@ -170,6 +133,46 @@ class VectorStoreRetriever:
             return loop.run_until_complete(self.aretrieve(query_str))
 
 
+class VectorRagEngine(BaseRagEngine):
+    """向量检索引擎"""
+
+    def create_engine(
+        self,
+        knowledge_base_ids: List[str],
+        similarity_top_k: int = 5
+    ):
+        """创建向量检索引擎"""
+        try:
+            filters = self._build_filters(knowledge_base_ids)
+
+            logger.info(f"VectorRagEngine filters: {filters}")
+
+            vector_store = get_vector_store()
+            index = get_vector_index()
+
+            retriever = VectorStoreRetriever(
+                vector_store=vector_store,
+                index=index,
+                filters=filters,
+                similarity_top_k=similarity_top_k,
+                embed_model=self.embed_model,
+            )
+
+            chat_engine = CondensePlusContextChatEngine.from_defaults(
+                retriever=retriever,  #检索
+                memory=self.memory_block,  #记忆
+                node_postprocessors=[LongContextReorder(), get_llm_reranker()], #后处理
+                llm=self.llm,  #LLM
+                verbose=True,  #是否打印详细信息
+            )
+
+            return chat_engine
+        except Exception as e:
+            logger.exception(f"向量检索引擎创建失败: {e}")
+            raise
+
+
+
 class HybridRagEngine(BaseRagEngine):
     """混合检索引擎"""
 
@@ -179,7 +182,6 @@ class HybridRagEngine(BaseRagEngine):
         similarity_top_k: int = 5
     ):
         """创建混合检索引擎"""
-        
         filters = self._build_filters(knowledge_base_ids)
 
         vector_store = get_vector_store()
@@ -193,11 +195,10 @@ class HybridRagEngine(BaseRagEngine):
             embed_model=self.embed_model,
         )
 
-        nodes = self._get_nodes_from_store(vector_store, knowledge_base_ids)
-
-        if nodes:
+        bm25_nodes = vector_store.get_nodes(filters=filters)
+        if bm25_nodes:
             bm25_retriever = BM25Retriever.from_defaults(
-                nodes=nodes,
+                nodes=bm25_nodes,
                 similarity_top_k=similarity_top_k,
             )
             hybrid_retriever = QueryFusionRetriever(
@@ -209,8 +210,9 @@ class HybridRagEngine(BaseRagEngine):
                 verbose=True,
             )
         else:
-            logger.warning("No nodes for BM25, using vector retriever only")
+            logger.warning("BM25 无可用于索引的节点，回退到纯向量检索")
             hybrid_retriever = vector_retriever
+    
 
         chat_engine = CondensePlusContextChatEngine.from_defaults(
             retriever=hybrid_retriever,
@@ -222,27 +224,6 @@ class HybridRagEngine(BaseRagEngine):
 
         return chat_engine
 
-    def _get_nodes_from_store(self, vector_store, knowledge_base_ids: List[str]):
-        """从PGVectorStore获取节点"""
-        import asyncio
-        try:
-            filters = self._build_filters(knowledge_base_ids)
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    import concurrent.futures
-                    with concurrent.futures.ThreadPoolExecutor() as pool:
-                        future = pool.submit(asyncio.run, vector_store.aget_nodes(filters=filters))
-                        nodes = future.result()
-                else:
-                    nodes = loop.run_until_complete(vector_store.aget_nodes(filters=filters))
-            except RuntimeError:
-                nodes = asyncio.run(vector_store.aget_nodes(filters=filters))
-            return nodes
-        except Exception as e:
-            logger.warning(f"Failed to get nodes from store: {e}")
-            return []
-
 
 class RagEngineFactory:
     """RAG引擎工厂类"""
@@ -251,56 +232,55 @@ class RagEngineFactory:
         self.session_id = session_id
         self._engines = {}
 
-    async def query(
+    async def stream_query(
         self,
         query: str,
         index_type: str,
         knowledge_base_ids: List[str],
         similarity_top_k: int = 5
-    ):
+    ) -> AsyncGenerator[str, None]:
         if index_type == "vector":
             engine_impl = VectorRagEngine(self.session_id)
         elif index_type == "hybrid":
             engine_impl = HybridRagEngine(self.session_id)
         else:
             raise ValueError(f"Unsupported index_type: {index_type}")
-        
+
         query_engine = engine_impl.create_engine(
             knowledge_base_ids=knowledge_base_ids,
             similarity_top_k=similarity_top_k
         )
 
-        response = await query_engine.achat(query)
-        logger.info(f"Query response type: {type(response)}")
-
+        streaming_response = await query_engine.astream_chat(query)
         response_text = ""
-        source = []
+        buffered_tokens = []
 
-        if response:
-            if hasattr(response, 'response') and response.response:
-                response_text = response.response
-            else:
-                response_text = str(response) if response else "无法生成回复"
+        async for token in streaming_response.async_response_gen():
+            token_text = token if isinstance(token, str) else str(token)
+            response_text += token_text
+            buffered_tokens.append(token_text)
 
-            if hasattr(response, 'source_nodes') and response.source_nodes:
-                for node in response.source_nodes:
-                    try:
-                        source.append({
-                            "node_id": node.node.node_id if hasattr(node, 'node') and hasattr(node.node, 'node_id') else None,
-                            "content": node.node.get_content() if hasattr(node, 'node') and hasattr(node.node, 'get_content') else str(node.node) if hasattr(node, 'node') else None,
-                            "score": node.score if hasattr(node, 'score') else None,
-                            "metadata": node.node.metadata if hasattr(node, 'node') and hasattr(node.node, 'metadata') else None,
-                        })
-                    except Exception as e:
-                        logger.warning(f"Error extracting source node: {e}")
+        if 'Empty Response' in response_text:
+            empty_prompt = (
+                "根据用户的问题，知识库中没有检索到相关信息。"
+                "请直接根据你的知识回答用户问题，并在回答开头明确说明【以下回答由AI大模型直接生成，未基于知识库内容，仅供参考】。"
+                "用户的问题是：{query}"
+            )
+            prompt = empty_prompt.format(query=query)
+            llm_stream = await engine_impl.llm.astream_complete(prompt)
+            response_text = ""
+            previous_text = ""
+            async for token in llm_stream:
+                token_text = token if isinstance(token, str) else str(token)
+                delta = token_text
+                if token_text.startswith(previous_text):
+                    delta = token_text[len(previous_text):]
+                previous_text = token_text
+                if delta:
+                    yield f"data: {json.dumps({'token': delta, 'done': False})}\n\n"
+            response_text = previous_text
+        else:
+            for token_text in buffered_tokens:
+                yield f"data: {json.dumps({'token': token_text, 'done': False})}\n\n"
 
-        return {
-            "source": source,
-            "query": query,
-            "response": response_text,
-            "metadata": {
-                "session_id": self.session_id,
-                "index_type": index_type,
-                "knowledge_base_ids": knowledge_base_ids,
-            }
-        }
+        yield f"data: {json.dumps({'done': True, 'response': response_text})}\n\n"

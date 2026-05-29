@@ -86,14 +86,23 @@ async def get_knowledge_base_list():
 @router.delete("/delete/{knowledge_base_id}", response_model=ApiResponse[Any])
 async def delete_knowledge_base(knowledge_base_id: UUID):
     """删除知识库"""
-    await knowledge_service.delete_knowledge_base(knowledge_base_id)
-    return ApiResponse(
-        success=True,
-        code=200,
-        message="知识库删除成功",
-        data={},
-        timestamp=datetime.datetime.now()
-    )
+    try:
+        await knowledge_service.delete_knowledge_base(knowledge_base_id)
+        return ApiResponse(
+            success=True,
+            code=200,
+            message="知识库删除成功",
+            data={},
+            timestamp=datetime.datetime.now()
+        )
+    except ValueError as e:
+        return ApiResponse(
+            success=False,
+            code=400,
+            message=str(e),
+            data={},
+            timestamp=datetime.datetime.now()
+        )
 
 # 修改知识库
 @router.put("/update/{knowledge_base_id}", response_model=ApiResponse[Any])
@@ -137,14 +146,14 @@ async def update_knowledge_base_settings(request: UpdateKnowledgeBaseSettingsReq
 
 @router.post("/build/{knowledge_base_id}", response_model=ApiResponse[Any])
 async def build_knowledge_base(knowledge_base_id: UUID):
-    """构建知识库"""
+    """构建知识库（后台非阻塞）"""
     try:
         result = await knowledge_service.build_knowledge_base(knowledge_base_id)
         
         return ApiResponse(
             success=True,
             code=200,
-            message=f"知识库构建完成",
+            message="知识库构建已启动",
             data=result,
             timestamp=datetime.datetime.now()
         )

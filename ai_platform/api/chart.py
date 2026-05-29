@@ -8,6 +8,9 @@ import uuid
 import datetime
 from typing import List,Optional
 from loguru import logger
+from fastapi.responses import StreamingResponse
+from fastapi.sse import EventSourceResponse
+
 router=APIRouter()
 
 class CreateChartRequest(BaseModel):
@@ -101,41 +104,52 @@ async def get_all_sessions():
 #聊天接口
 @router.post("/chat")
 async def chat(request: ChatRequest):
-    """聊天接口"""
-    try:
-        session_id = request.session_id
-        if not session_id:
-            session_id = str(uuid.uuid4())
-            await session_manager.create_session(session_id, request.knowledge_base_ids)
-        
-        #创建聊天实例
-        chat_instance = ChatInstance(session_id=session_id)
-        result = await chat_instance.query(
-            query=request.message,
-            knowledge_base_ids=request.knowledge_base_ids
-        )
+    """聊天接口（SSE 流式响应）"""
+    session_id = request.session_id
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        await session_manager.create_session(session_id, request.knowledge_base_ids)
 
-        response_text = result.get("response", "无法生成回复")
-        sources = result.get("source", [])
+    chat_instance = ChatInstance(session_id=session_id)
+    # await session_manager.save_chat_message(session_id, "user", request.message)
 
-        # await session_manager.save_chat_message(session_id, "assistant", response_text)
+    async def event_stream():
+        final_response = ""
+        import json as _json
+        try:
+            async for chunk in chat_instance.stream_query(
+                query=request.message,
+                knowledge_base_ids=request.knowledge_base_ids,
+            ):
+                yield chunk
+                try:
+                    if chunk.startswith("data: "):
+                        data = _json.loads(chunk[6:])
+                        if data.get("done") and data.get("response"):
+                            final_response = data["response"]
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.exception(f"流式聊天失败: {e}")
+            yield f"data: {_json.dumps({'error': str(e), 'done': True})}\n\n"
 
-        return ApiResponse(
-            message=response_text,
-            code=200,
-            success=True,
-            timestamp=datetime.datetime.now(),
-            data={
-                "session_id": session_id,
-                "timestamp": datetime.datetime.now().isoformat(),
-                "user_message": request.message,
-                "knowledge_base_ids": request.knowledge_base_ids,
-                "sources": sources,
-            }
-        )
-    except Exception as e:
-        logger.exception(f"聊天请求失败: {e}")
-        raise HTTPException(status_code=500, detail=f"聊天请求失败: {str(e)}")
+        if final_response and final_response != "Empty Response":
+            try:
+                await session_manager.save_chat_message(
+                    session_id, "assistant", final_response
+                )
+            except Exception as e:
+                logger.exception(f"保存AI回复失败: {e}")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 #查询历史对话接口
 @router.post("/history")
@@ -158,8 +172,3 @@ async def get_history(request: DeleteChartRequest):
     except Exception as e:
         logger.exception(f"查询历史对话失败: {e}")
         raise HTTPException(status_code=500, detail="查询历史对话失败")
-
-
-
-
-

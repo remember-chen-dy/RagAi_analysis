@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.10",
     "@types/marked": "^6.0.0",
     "ant-design-vue": "^4.2.6",
+    "ant-design-x-vue": "^1.6.0",
     "highlight.js": "^11.11.1",
     "marked": "^16.0.0",
     "tailwindcss": "^4.1.10",

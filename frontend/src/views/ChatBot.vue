@@ -195,7 +195,7 @@
             </button>
           </form>
         </div>
-      </div>
+      </div>  
 
       <!-- 右侧：知识库面板 -->
       <div class="w-72 flex-shrink-0 max-h-[calc(100vh-180px)] bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col">
@@ -430,22 +430,46 @@ const sendMessage = async () => {
   messages.value.push(userMessage)
   await forceScrollToBottom()
   isLoading.value = true
+
+  const aiMessageId = generateId()
+  const aiMessage: Message = {
+    id: aiMessageId, role: 'assistant', content: '',
+    timestamp: new Date().toISOString(), session_id: currentSessionId.value!
+  }
+  messages.value.push(aiMessage)
+
   try {
-    const aiResponse = await ChatAPI.sendMessage(question, currentSessionId.value!, selectedKnowledgeBases.value)
-    const aiMessage: Message = {
-      id: generateId(), role: 'assistant', content: aiResponse,
-      timestamp: new Date().toISOString(), session_id: currentSessionId.value!
-    }
-    messages.value.push(aiMessage)
-    await scrollToBottom()
-    await loadSessions()
+    await ChatAPI.sendMessageStream(
+      question,
+      (token: string) => {
+        const msg = messages.value.find(m => m.id === aiMessageId)
+        if (msg) {
+          msg.content += token
+        }
+      },
+      async (fullResponse: string, sources: any[]) => {
+        const msg = messages.value.find(m => m.id === aiMessageId)
+        if (msg) {
+          msg.content = fullResponse
+        }
+        await loadSessions()
+      },
+      (error: string) => {
+        console.error('发送消息失败:', error)
+        const msg = messages.value.find(m => m.id === aiMessageId)
+        if (msg && !msg.content) {
+          msg.content = '抱歉，我暂时无法回答您的问题。请稍后再试。'
+        }
+      },
+      currentSessionId.value!,
+      selectedKnowledgeBases.value
+    )
   } catch (error) {
     console.error('发送消息失败:', error)
-    const errorMessage: Message = {
-      id: generateId(), role: 'assistant', content: '抱歉，我暂时无法回答您的问题。请稍后再试。',
-      timestamp: new Date().toISOString(), session_id: currentSessionId.value!
+    const msg = messages.value.find(m => m.id === aiMessageId)
+    if (msg && !msg.content) {
+      msg.content = '抱歉，我暂时无法回答您的问题。请稍后再试。'
     }
-    messages.value.push(errorMessage)
     await forceScrollToBottom()
   } finally {
     isLoading.value = false
@@ -510,10 +534,6 @@ watch(selectedKnowledgeBases, async (newValue, oldValue) => {
   }
 }, {deep: true})
 
-const getKnowledgeBaseName = (id: string) => {
-  const kb = knowledgeBases.value.find(kb => kb.id === id)
-  return kb ? kb.name : '未知知识库'
-}
 
 const formatFileSize = (bytes: number | undefined) => {
   if (!bytes) return '0 B'

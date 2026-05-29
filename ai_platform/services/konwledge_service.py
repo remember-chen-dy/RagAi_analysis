@@ -1,4 +1,6 @@
+from pdb import run
 import uuid
+import asyncio
 from datetime import datetime
 from typing import List, Optional, Dict, Any, Tuple
 
@@ -95,10 +97,24 @@ class KnowledgeService:
         try:
             await self._get_engine()
             async with AsyncSession(self.engine) as session:
+                knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
+                if knowledge_base is None:
+                    raise ValueError(f"知识库不存在")
+
+                file_count_query = select(func.count()).select_from(KnowledgeBaseFile).where(
+                    KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
+                )
+                file_count_result = await session.execute(file_count_query)
+                file_count = file_count_result.scalar()
+
+                if file_count > 0:
+                    raise ValueError(f"该知识库下还有 {file_count} 个文件，请先删除所有文件后再删除知识库")
 
                 await session.execute(delete(KnowledgeBase).where(KnowledgeBase.id == knowledge_base_id))
                 await session.commit()
                 return True
+        except ValueError:
+            raise
         except Exception as e:
             logger.exception(f"删除知识库失败: {e}")
             raise
@@ -162,57 +178,60 @@ class KnowledgeService:
 
             #构建知识库
     async def build_knowledge_base(self, knowledge_base_id: UUID):
-        """构建知识库"""
+        """构建知识库（后台非阻塞）"""
+        asyncio.create_task(self._build_knowledge_base_task(knowledge_base_id))
+        return {
+            "knowledge_base_id": str(knowledge_base_id),
+            "status": "building",
+            "message": "知识库构建已启动，请稍后查看状态"
+        }
+
+    async def _build_knowledge_base_task(self, knowledge_base_id: UUID):
+        """后台构建知识库任务"""
         try:
             await self._get_engine()
             async with AsyncSession(self.engine) as session:
-                # 1. 获取知识库基本信息
                 knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
                 if knowledge_base is None:
-                    raise ValueError(f"知识库 {knowledge_base_id} 不存在")
-                
-                # 2. 获取知识库设置
+                    logger.error(f"知识库 {knowledge_base_id} 不存在")
+                    return
+
                 kb_settings = KnowledgeBaseSettings(**(knowledge_base.settings or {}))
-                
-                # 2.5 删除该知识库的旧向量数据
+
                 await self._clear_vector_nodes(knowledge_base_id)
 
-                # 3. 获取知识库所有文件的路径
                 query = select(KnowledgeBaseFile.file_path).where(
                     KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
                 )
                 file_records = await session.execute(query)
                 file_paths = file_records.scalars().all()
-                
-                # # 3. 记录日志便于调试
-                # logger.info(f"知识库 {knowledge_base_id} 关联了 {len(file_paths)} 个文件: {file_paths}")
-                
-                # 4. TODO: 在这里调用文件处理逻辑
-                # 例如：解析文件、分块、生成向量、存入向量数据库等
-                # await self._process_files(file_paths, knowledge_base_id)
-                file_pipeline = FileDataPipeline(file_paths, kb_settings,knowledge_base_id)
+
+                file_pipeline = FileDataPipeline(file_paths, kb_settings, knowledge_base_id)
                 await file_pipeline.process_minio_file()
-                # # 5. 更新状态（无论是否有文件，都标记为 active？根据业务决定）
+
                 stmt = update(KnowledgeBaseFile).where(
                     KnowledgeBaseFile.knowledge_base_id == knowledge_base_id
                 ).values(status="active")
                 await session.execute(stmt)
-                
+
                 knowledge_base.status = "active"
                 knowledge_base.update_time = datetime.now()
                 await session.commit()
-                await session.refresh(knowledge_base)
 
-                return {
-                    "knowledge_base_id": str(knowledge_base_id),
-                    "status": "active",
-                    "file_paths": file_paths,
-                    "file_count": len(file_paths)  # 增加文件数量字段
-                }
-                
+                logger.info(f"知识库 {knowledge_base_id} 构建完成")
+
         except Exception as e:
             logger.exception(f"构建知识库失败: {e}")
-            raise
+            try:
+                await self._get_engine()
+                async with AsyncSession(self.engine) as session:
+                    knowledge_base = await session.get(KnowledgeBase, knowledge_base_id)
+                    if knowledge_base:
+                        knowledge_base.status = "failed"
+                        knowledge_base.update_time = datetime.now()
+                        await session.commit()
+            except Exception as update_err:
+                logger.exception(f"更新知识库失败状态时出错: {update_err}")
 
     async def _clear_vector_nodes(self, knowledge_base_id: UUID):
         """删除知识库的所有旧向量节点"""

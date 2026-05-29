@@ -171,7 +171,7 @@ class RagasEvaluator:
         logger.info(f"测试集生成完成, 共 {len(test_samples)} 条样本")
 
         query_results = []
-        for i, sample in enumerate(test_samples):
+        async for i, sample in enumerate(test_samples):
             try:
                 result = await self._query_sample(
                     question=sample["question"],
@@ -215,7 +215,7 @@ class RagasEvaluator:
         session_id = str(uuid.uuid4())
         chat_instance = ChatInstance(session_id=session_id)
 
-        result = await chat_instance.query(
+        result = await chat_instance.stream_query(
             query=question,
             knowledge_base_ids=knowledge_base_ids,
         )

@@ -120,6 +120,12 @@ class SessionManager:
                 result = await session.execute(stmt)
                 sessions =[]
                 for row in result.scalars().all():
+                    kb_ids = row.knowledge_base_ids
+                    if isinstance(kb_ids, str):
+                        try:
+                            kb_ids = json.loads(kb_ids)
+                        except (json.JSONDecodeError, TypeError):
+                            kb_ids = []
                     sessions.append(
                          {
                        "id": row.session_id,
@@ -128,7 +134,7 @@ class SessionManager:
                         "message_count": row.message_count,
                         "last_message": row.last_message,
                         "last_message_role": row.last_message_role,
-                        "knowledge_base_ids":  json.dumps(row.knowledge_base_ids)  # 新增：返回会话的知识库配置
+                        "knowledge_base_ids": kb_ids or []
                         }
                     )
                 
@@ -151,7 +157,13 @@ class SessionManager:
                 for row in rows:
                     row_dict = dict(row._mapping)
                     data_field = row_dict.get("data", {})
-                    
+
+                    if isinstance(data_field, str):
+                        try:
+                            data_field = json.loads(data_field)
+                        except (json.JSONDecodeError, TypeError):
+                            data_field = {}
+
                     timestamp_ns = 0
                     if row_dict.get("timestamp"):
                         if isinstance(row_dict["timestamp"], int):
@@ -184,7 +196,7 @@ class SessionManager:
             async with AsyncSession(engine) as db_session:
                 import time
                 import json
-                
+
                 message_data = {
                     "role": role,
                     "additional_kwargs": {},
@@ -195,12 +207,12 @@ class SessionManager:
                         }
                     ]
                 }
-                
+
                 insert_sql = text(
                     "INSERT INTO chat_history (key, timestamp, role, status, data) "
                     "VALUES (:key, :timestamp, :role, :status, :data)"
                 )
-                
+
                 await db_session.execute(insert_sql, {
                     "key": session_id,
                     "timestamp": int(time.time() * 1e9),
@@ -210,8 +222,28 @@ class SessionManager:
                 })
                 await db_session.commit()
                 logger.info(f"保存聊天消息: session={session_id}, role={role}")
+
+            await self._update_session_stats(session_id, role, message_text)
+
         except Exception as e:
             logger.exception(f"保存聊天消息失败: {e}")
+
+    async def _update_session_stats(self, session_id: str, role: str, message_text: str):
+        """更新会话统计信息（message_count, last_message, last_activity）"""
+        try:
+            engine = await self._get_engine()
+            async with AsyncSession(engine) as db_session:
+                stmt = select(ChatSession).where(ChatSession.session_id == session_id)
+                result = await db_session.execute(stmt)
+                chat_session = result.scalar_one_or_none()
+                if chat_session:
+                    chat_session.last_activity = datetime.now()
+                    chat_session.message_count = (chat_session.message_count or 0) + 1
+                    chat_session.last_message = message_text
+                    chat_session.last_message_role = role
+                    await db_session.commit()
+        except Exception as e:
+            logger.exception(f"更新会话统计失败: {e}")
 
 
 

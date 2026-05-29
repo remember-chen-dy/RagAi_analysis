@@ -34,7 +34,7 @@
         <option value="" disabled>
           {{ isLoadingKnowledgeBases ? '加载中...' : (knowledgeBases.length === 0 ? '暂无知识库' : '请选择') }}
         </option>
-        <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id" :disabled="kb.status === 'building'">{{ kb.name }}{{ kb.status === 'building' ? ' (构建中)' : '' }}</option>
+        <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id" >{{ kb.name }}{{ kb.status === 'building' ? ' (构建中)' : '' }}</option>
       </select>
     </div>
 

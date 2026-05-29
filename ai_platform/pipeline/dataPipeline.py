@@ -9,6 +9,7 @@ from loguru import logger
 from ai_platform.pipeline.loader import DataLoader
 from ai_platform.pipeline.transformer import TransformerComponent
 from ai_platform.config.resource import get_vector_index
+from ai_platform.pipeline.data_filter import AdvancedHeaderFooterFilter
 
 class FileDataPipeline:
     """文件数据管道"""
@@ -17,17 +18,19 @@ class FileDataPipeline:
         self.file_path = file_path
         self.settings = settings or KnowledgeBaseSettings()
         self.knowledge_base_id = knowledge_base_id
-    
+
     async def process_minio_file(self):
         """处理MinIO文件"""
         file_paths = []
-        node_data=[]
+        node_data = []
         for object_name in self.file_path:
             file_path = await self._download_from_minio(object_name)
             file_paths.append(file_path)
-        
+
         documents = DataLoader.load_file_dir(file_paths)
-        logger.info(f"开始处理 {file_paths} 个文件")
+
+        filter_component = AdvancedHeaderFooterFilter()
+        documents = filter_component.filter_documents(documents)
 
         transformer_component = TransformerComponent(self.settings)
         pipeline = transformer_component.create_pipeline(documents)
@@ -39,20 +42,18 @@ class FileDataPipeline:
                 node.metadata['knowledge_base_id'] = self.knowledge_base_id
                 node_data.append(node)
 
-
         await self._store_to_vector_db(node_data, self.settings.index_type)
-        
+
         return node_data
 
     async def _download_from_minio(self, object_name: str) -> str:
-
         """从MinIO下载文件到临时目录，返回完整文件路径"""
         try:
             temp_dir = tempfile.mkdtemp(prefix="minio_pipeline_")
             file_data = await minio_service.read_file(self.bucket_name, object_name)
             if not file_data:
                 raise ValueError(f"无法从MinIO读取文件: {object_name}")
-                
+
             file_name = Path(object_name).name
             temp_file_path = Path(temp_dir) / file_name
 
@@ -73,10 +74,9 @@ class FileDataPipeline:
                 logger.info("节点列表为空，无需插入")
                 return
             logger.info(f"开始插入 {len(nodes)} 个节点到向量数据库")
-            # if index_type == 'vector':
-            await get_vector_index().ainsert_nodes(nodes)
+            get_vector_index().insert_nodes(nodes)
             logger.info(f"成功插入 {len(nodes)} 个节点到向量数据库")
-            
+
         except Exception as e:
             logger.exception(f"插入向量数据库失败: {e}")
             raise
