@@ -450,6 +450,8 @@
       return 'video'
     } else if (['mp3', 'wav', 'ogg'].includes(extension || '')) {
       return 'audio'
+    } else if (['docx', 'doc'].includes(extension || '')) {
+      return 'docx'
     }
     return 'other'
   }
