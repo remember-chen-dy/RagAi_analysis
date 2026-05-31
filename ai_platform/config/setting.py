@@ -8,6 +8,10 @@ class Setting(PydanticBaseSettings):
     #系统配置
     log_level: str = Field(default="INFO", description="日志级别")
 
+    # JWT 配置
+    jwt_secret_key: str = Field(default="rag-ai-platform-jwt-secret-key-2026", description="JWT签名密钥")
+    jwt_algorithm: str = Field(default="HS256", description="JWT加密算法")
+    jwt_access_token_expire_minutes: int = Field(default=1440, description="Access Token过期时间(分钟)")
 
     # 数据库配置
     postgres_host: str = Field(default="localhost", description="PostgreSQL主机")

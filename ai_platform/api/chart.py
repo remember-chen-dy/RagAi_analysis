@@ -2,6 +2,7 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Response, Form, 
 from ai_platform.types.common import ApiResponse
 from ai_platform.models.session import session_manager
 from ai_platform.query_engine.chat_instance import ChatInstance
+from ai_platform.config.auth import get_current_user
 from pydantic import BaseModel, Field
 from uuid import UUID
 import uuid
@@ -11,7 +12,7 @@ from loguru import logger
 from fastapi.responses import StreamingResponse
 from fastapi.sse import EventSourceResponse
 
-router=APIRouter()
+router=APIRouter(dependencies=[Depends(get_current_user)])
 
 class CreateChartRequest(BaseModel):
     """创建图表请求模型"""

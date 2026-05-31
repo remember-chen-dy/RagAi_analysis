@@ -1,4 +1,4 @@
-import { getAuthHeaders } from './auth'
+import { getAuthHeaders, removeAuthToken } from './auth'
 import { API_BASE_URL } from '@/config'
 
 // 聊天消息类型
@@ -153,6 +153,12 @@ export class ChatAPI {
         knowledge_base_ids: knowledgeBaseIds,
       }),
     })
+
+    if (response.status === 401) {
+      removeAuthToken()
+      window.location.href = '/login'
+      throw new Error('登录已过期，请重新登录')
+    }
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}))

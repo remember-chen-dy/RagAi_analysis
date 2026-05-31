@@ -5,6 +5,7 @@ import KnowledgeBase from '@/views/KnowledgeBase.vue'
 import Evaluation from '@/views/Evaluation.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
+import { getAuthToken } from '@/api/auth'
 
 const routes = [
   {
@@ -13,7 +14,7 @@ const routes = [
     component: Login,
     meta: {
       title: '登录',
-      hideLayout: true // 标记此页面不显示导航栏
+      hideLayout: true
     }
   },
   {
@@ -22,7 +23,7 @@ const routes = [
     component: Register,
     meta: {
       title: '注册',
-      hideLayout: true // 标记此页面不显示导航栏
+      hideLayout: true
     }
   },
   {
@@ -69,11 +70,12 @@ router.beforeEach((to, _, next) => {
     document.title = `${to.meta.title} - AI平台`
   }
 
-  // 简单的认证检查 (实际项目中应该检查真实的认证状态)
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-  
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  const token = getAuthToken()
+
+  if (to.meta.requiresAuth && !token) {
     next('/login')
+  } else if ((to.path === '/login' || to.path === '/register') && token) {
+    next('/files')
   } else {
     next()
   }

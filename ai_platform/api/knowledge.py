@@ -1,14 +1,15 @@
 import datetime
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 
-from pydantic.types import Json  # ✅ 添加 UUID 导入
+from pydantic.types import Json
 from ai_platform.types.common import ApiResponse
 from ai_platform.services.konwledge_service import knowledge_service
+from ai_platform.config.auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 # 定义请求模型
 class CreateKnowledgeBaseRequest(BaseModel):

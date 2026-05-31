@@ -1,8 +1,14 @@
-// 文件上传API客户端
-
 import type {FileListResponse as FileListResponseType, UploadResponse} from '../types';
-import { getAuthHeaders } from './auth'
+import { getAuthHeaders, removeAuthToken } from './auth'
 import { API_BASE_URL } from '@/config'
+
+function handleResponse(response: Response): void {
+  if (response.status === 401) {
+    removeAuthToken()
+    window.location.href = '/login'
+    throw new Error('登录已过期，请重新登录')
+  }
+}
 
 interface FileUploadResponse {
   success: boolean
@@ -24,7 +30,7 @@ export class UploadAPI {
 
     const authHeaders = getAuthHeaders()
     const headers: Record<string, string> = {}
-    
+
     if (authHeaders.Authorization) {
       headers.Authorization = authHeaders.Authorization
     }
@@ -35,6 +41,7 @@ export class UploadAPI {
       body: formData,
     });
 
+    handleResponse(response)
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || '文件上传失败');
@@ -51,7 +58,8 @@ export class UploadAPI {
         ...getAuthHeaders(),
       },
     });
-    
+
+    handleResponse(response)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || '获取知识库列表失败');
@@ -70,7 +78,8 @@ export class UploadAPI {
         ...getAuthHeaders(),
       },
     });
-    
+
+    handleResponse(response)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || '获取文件列表失败');
@@ -94,6 +103,7 @@ export class UploadAPI {
       body: JSON.stringify({ object_name: objectName }),
     });
 
+    handleResponse(response)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || '删除文件失败');
@@ -115,6 +125,7 @@ export class UploadAPI {
       body: JSON.stringify({ object_name: objectName }),
     });
 
+    handleResponse(response)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || '获取下载链接失败');
@@ -141,6 +152,7 @@ export class UploadAPI {
       body: JSON.stringify({ object_name: objectName }),
     });
 
+    handleResponse(response)
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.detail || '获取文件信息失败');
@@ -159,6 +171,7 @@ export class UploadAPI {
       body: JSON.stringify({ object_name: objectName }),
     });
 
+    handleResponse(response)
     if (!response.ok) {
       throw new Error('获取预览链接失败');
     }
@@ -185,4 +198,4 @@ export class UploadAPI {
   }
 }
 
-export default UploadAPI; 
+export default UploadAPI;

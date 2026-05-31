@@ -8,11 +8,12 @@ import datetime
 from ai_platform.services.konwledge_service import knowledge_service
 from ai_platform.services.minio_service import minio_service 
 from ai_platform.config.setting import settings
+from ai_platform.config.auth import get_current_user
 from uuid import  UUID
 from loguru import logger
 from ai_platform.services.konwledge_service import KnowledgeBaseFileCreate
 
-router=APIRouter()
+router=APIRouter(dependencies=[Depends(get_current_user)])
 
 from pydantic import BaseModel, Field
 class PreviewRequest(BaseModel):

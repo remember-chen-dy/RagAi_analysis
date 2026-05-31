@@ -109,8 +109,6 @@ class UserManager:
             user = await self.get_username(username)
             if user is None:
                 return None
-            if not user.is_active:
-                return None
             if not User.verify_password(user.password_hash, password):
                 return None
             await self.last_login(user.id)
@@ -118,6 +116,7 @@ class UserManager:
         except Exception as e:
             logger.exception(e)
             return None
+
 
     #获取用户登陆信息
     async def get_username(self, username: str):

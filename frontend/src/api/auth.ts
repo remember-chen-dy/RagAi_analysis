@@ -1,66 +1,73 @@
+import { API_BASE_URL } from '@/config'
+
 interface LoginRequest {
   username: string
   password: string
-  remember_me: boolean
 }
 
 interface RegisterRequest {
   username: string
   password: string
-  confirm_password: string
   email?: string
-  full_name?: string
 }
 
 interface UserInfo {
   username: string
   email?: string
-  full_name?: string
   is_active: boolean
-  is_superuser: boolean
-  created_at?: string
-  last_login?: string
   avatar_url?: string
-  bio?: string
 }
 
-interface LoginResponse {
-  message: string
-  user: UserInfo
-  session_token: string
-  expires_at: string
-}
-
-interface ApiResponse {
+interface ApiResponse<T = any> {
   success: boolean
   message: string
-  data?: any
+  code: number
+  data?: T
 }
 
-import { API_BASE_URL } from '@/config'
+interface LoginData {
+  token: string
+  token_type: string
+  expires_in: number
+  user: UserInfo
+}
 
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken')
 }
 
-// 设置认证令牌
 const setAuthToken = (token: string): void => {
   localStorage.setItem('authToken', token)
 }
 
-// 移除认证令牌
 const removeAuthToken = (): void => {
   localStorage.removeItem('authToken')
+  localStorage.removeItem('isAuthenticated')
+  localStorage.removeItem('userInfo')
 }
 
-// 获取认证头
+const getUserInfo = (): UserInfo | null => {
+  const info = localStorage.getItem('userInfo')
+  if (info) {
+    try {
+      return JSON.parse(info)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+const setUserInfo = (user: UserInfo): void => {
+  localStorage.setItem('userInfo', JSON.stringify(user))
+}
+
 const getAuthHeaders = (): Record<string, string> => {
   const token = getAuthToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-// 登录API
-export const loginApi = async (data: LoginRequest): Promise<LoginResponse> => {
+const loginApi = async (data: LoginRequest): Promise<ApiResponse<LoginData>> => {
   const response = await fetch(`${API_BASE_URL}/users/login`, {
     method: 'POST',
     headers: {
@@ -69,21 +76,22 @@ export const loginApi = async (data: LoginRequest): Promise<LoginResponse> => {
     body: JSON.stringify(data),
   })
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || '登录失败')
+  const result = await response.json()
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.detail || result.message || '登录失败')
   }
 
-  const result = await response.json()
-  
-  // 存储认证令牌
-  setAuthToken(result.session_token)
-  
+  if (result.data?.token) {
+    setAuthToken(result.data.token)
+    setUserInfo(result.data.user)
+    localStorage.setItem('isAuthenticated', 'true')
+  }
+
   return result
 }
 
-// 注册API
-export const registerApi = async (data: RegisterRequest): Promise<ApiResponse> => {
+const registerApi = async (data: RegisterRequest): Promise<ApiResponse> => {
   const response = await fetch(`${API_BASE_URL}/users/register`, {
     method: 'POST',
     headers: {
@@ -100,31 +108,25 @@ export const registerApi = async (data: RegisterRequest): Promise<ApiResponse> =
   return await response.json()
 }
 
-// 登出API
-export const logoutApi = async (): Promise<ApiResponse> => {
-  const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-    },
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || '登出失败')
-  }
-
-  // 移除本地存储的令牌
+const logoutApi = (): void => {
   removeAuthToken()
-  
-  return await response.json()
 }
 
-// 工具函数
-export const isAuthenticated = (): boolean => {
+const isAuthenticated = (): boolean => {
   return !!getAuthToken()
 }
 
-// 导出令牌管理函数供其他模块使用
-export { getAuthToken, setAuthToken, removeAuthToken, getAuthHeaders } 
+export {
+  getAuthToken,
+  setAuthToken,
+  removeAuthToken,
+  getUserInfo,
+  setUserInfo,
+  getAuthHeaders,
+  loginApi,
+  registerApi,
+  logoutApi,
+  isAuthenticated,
+}
+
+export type { UserInfo, LoginData, ApiResponse }

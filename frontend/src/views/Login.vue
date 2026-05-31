@@ -161,23 +161,14 @@ const handleLogin = async () => {
     const result = await loginApi({
       username: form.username,
       password: form.password,
-      remember_me: form.rememberMe
     })
-    console.log(result)
-    // 存储用户信息到 localStorage（兼容现有代码）
-    localStorage.setItem('isAuthenticated', 'true')
-    // localStorage.setItem('username', result.user.username)
-    // localStorage.setItem('userInfo', JSON.stringify(result.user))
-    console.log(result)
-    if(result.code==200){
-     // 登录成功后跳转到主页
-     message.success('登录成功')
-    await router.push('/files') 
-    }else{
-      
-      errorMessage.value = result.detail || '登录失败，请重试'
+
+    if (result.success && result.data?.token) {
+      message.success('登录成功')
+      await router.push('/files')
+    } else {
+      errorMessage.value = result.message || '登录失败，请重试'
     }
-    
   } catch (error: any) {
     console.error('登录失败:', error)
     errorMessage.value = error.message || '登录失败，请重试'
@@ -186,7 +177,6 @@ const handleLogin = async () => {
   }
 }
 </script>
-
 <style scoped>
 /* 确保与整体风格一致的额外样式 */
 .transition-colors {

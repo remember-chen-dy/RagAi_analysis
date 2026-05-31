@@ -1,4 +1,4 @@
-import { getAuthHeaders } from './auth'
+import { getAuthHeaders, removeAuthToken } from './auth'
 import { API_BASE_URL } from '@/config'
 
 export interface EvaluationRequest {
@@ -42,6 +42,12 @@ export const evaluateRag = async (request: EvaluationRequest): Promise<Evaluatio
     },
     body: JSON.stringify(request),
   })
+
+  if (response.status === 401) {
+    removeAuthToken()
+    window.location.href = '/login'
+    throw new Error('登录已过期，请重新登录')
+  }
 
   if (!response.ok) {
     const error = await response.json()

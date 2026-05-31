@@ -109,15 +109,15 @@ class VectorStoreRetriever:
         """异步检索"""
 
         try:
-            nodes = await self.vector_store.aquery(
+            nodes = await self.vector_store.query(
                 query_str,
-                self.similarity_top_k,
+                self.similarity_top_k, #返回的节点  
                 self.filters
             )
             return nodes
         except Exception as e:
             logger.warning(f"PGVectorStore aquery failed: {e}, fallback to index retriever")
-            retriever = self.index.as_retriever(
+            retriever = self.index.query(
                 filters=self.filters,
                 similarity_top_k=self.similarity_top_k,
             )
@@ -144,8 +144,6 @@ class VectorRagEngine(BaseRagEngine):
         """创建向量检索引擎"""
         try:
             filters = self._build_filters(knowledge_base_ids)
-
-            logger.info(f"VectorRagEngine filters: {filters}")
 
             vector_store = get_vector_store()
             index = get_vector_index()
@@ -194,28 +192,14 @@ class HybridRagEngine(BaseRagEngine):
             similarity_top_k=similarity_top_k,
             embed_model=self.embed_model,
         )
-
         bm25_nodes = vector_store.get_nodes(filters=filters)
-        if bm25_nodes:
-            bm25_retriever = BM25Retriever.from_defaults(
+        bm25_retriever = BM25Retriever.from_defaults(
                 nodes=bm25_nodes,
                 similarity_top_k=similarity_top_k,
             )
-            hybrid_retriever = QueryFusionRetriever(
-                retrievers=[bm25_retriever, vector_retriever],
-                similarity_top_k=similarity_top_k,
-                num_queries=1,
-                mode=FUSION_MODES.RECIPROCAL_RANK,
-                use_async=True,
-                verbose=True,
-            )
-        else:
-            logger.warning("BM25 无可用于索引的节点，回退到纯向量检索")
-            hybrid_retriever = vector_retriever
     
-
         chat_engine = CondensePlusContextChatEngine.from_defaults(
-            retriever=hybrid_retriever,
+            retriever=[bm25_retriever, vector_retriever],
             memory=self.memory_block,
             llm=self.llm,
             node_postprocessors=[LongContextReorder(), get_llm_reranker()],
@@ -250,7 +234,6 @@ class RagEngineFactory:
             knowledge_base_ids=knowledge_base_ids,
             similarity_top_k=similarity_top_k
         )
-
         streaming_response = await query_engine.astream_chat(query)
         response_text = ""
         buffered_tokens = []

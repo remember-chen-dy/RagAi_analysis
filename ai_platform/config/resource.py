@@ -109,8 +109,8 @@ def init_resource():
             #     url=settings.neo4j_url
             # ),
             llm=DashScope(
-                            # model_name=DashScopeGenerationModels.QWEN_MAX,
-                            model_name="deepseek-v4-pro",
+                            model_name=DashScopeGenerationModels.QWEN_MAX,
+                            # model_name="deepseek-v4-pro",
                             api_key=os.getenv("DASHSCOPE_APIKEY"),
                             stream=False,
                             max_tokens=2000,  # 增加输出长度限制，支持更长的回复
@@ -121,11 +121,6 @@ def init_resource():
                 model_name="text-embedding-v2",
                 api_key=os.getenv("DASHSCOPE_APIKEY"),
             ),
-            # embedding=DashScopeMultiModal(
-            #     # model_name="text-embedding-v2",
-            #     model_name="tongyi-embedding-vision-plus-2026-03-06",
-            #     api_key=os.getenv("DASHSCOPE_APIKEY"),
-            # ),
             vl_client=DashScopeMultiModal(
                 model_name='qwen3-vl-8b-instruct',
                 api_key=os.getenv("DASHSCOPE_APIKEY"),

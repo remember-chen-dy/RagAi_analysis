@@ -242,18 +242,9 @@ const handleLogout = () => {
     content: '确定要退出登录吗？',
     okText: '确定',
     cancelText: '取消',
-    onOk: async () => {
-      try {
-        await logoutApi()
-      } catch (error) {
-        console.error('登出失败:', error)
-      } finally {
-        localStorage.removeItem('isAuthenticated')
-        localStorage.removeItem('username')
-        localStorage.removeItem('userInfo')
-        localStorage.removeItem('authToken')
-        await router.push('/login')
-      }
+    onOk: () => {
+      logoutApi()
+      router.push('/login')
     }
   })
 }
