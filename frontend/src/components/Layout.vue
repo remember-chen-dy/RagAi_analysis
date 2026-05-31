@@ -54,17 +54,6 @@
                 </svg>
                 AI 对话
               </router-link>
-              <router-link
-                  to="/evaluation"
-                  class="flex items-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                  :class="{ 'text-gray-900 bg-gray-100': $route.path === '/evaluation' }"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                RAG 评估
-              </router-link>
             </div>
           </div>
 
@@ -187,7 +176,7 @@
             </svg>
             AI 对话
           </router-link>
-          <router-link
+          <!-- <router-link
               to="/evaluation"
               class="flex items-center text-gray-600 hover:text-gray-900 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 block"
               :class="{ 'text-gray-900 bg-gray-100': $route.path === '/evaluation' }"
@@ -198,7 +187,7 @@
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
             RAG 评估
-          </router-link>
+          </router-link> -->
         </div>
       </div>
     </nav>

@@ -37,11 +37,11 @@
     </header>
 
     <!-- 主内容区域 -->
-    <main class="flex-1 max-h-[calc(100vh-140px)] px-6 py-4 mb-4 overflow-hidden">
+    <main class="flex-1 min-h-0 px-6 py-4 mb-4 overflow-hidden">
       <div class="grid grid-cols-12 gap-6 h-full">
 
         <!-- 左侧：知识库列表 -->
-        <div class="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col max-h-full">
+        <div class="col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-scroll">
           <!-- 左侧头部 -->
           <div class="p-6 border-b border-gray-100 flex-shrink-0">
             <h2 class="text-lg font-medium text-gray-900 mb-4">知识库列表</h2>
@@ -195,7 +195,7 @@
         </div>
 
         <!-- 中间：数据内容 -->
-        <div class="col-span-7 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col max-h-full">
+        <div class="col-span-7 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
           <div v-if="!selectedKnowledgeBase" class="flex-1 flex items-center justify-center">
             <div class="text-center">
               <div class="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -366,7 +366,7 @@
         </div>
 
         <!-- 右侧：知识库设置 -->
-        <div class="col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col max-h-full">
+        <div class="col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
           <div v-if="!selectedKnowledgeBase" class="flex-1 flex items-center justify-center">
             <div class="text-center px-4">
               <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">

@@ -56,15 +56,7 @@ const routes = [
       requiresAuth: true
     }
   },
-  {
-    path: '/evaluation',
-    name: 'Evaluation',
-    component: Evaluation,
-    meta: {
-      title: 'RAG评估',
-      requiresAuth: true
-    }
-  }
+
 ]
 
 const router = createRouter({
