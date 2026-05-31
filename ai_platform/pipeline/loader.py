@@ -2,7 +2,6 @@ from llama_index.core import Document, SimpleDirectoryReader
 from llama_index.readers.file import PDFReader, DocxReader, ImageReader, MarkdownReader
 from loguru import logger
 from llama_index.core.base.llms.types import MessageRole, ChatMessage
-import dashscope
 from typing import List, Optional, Dict
 import base64
 import os
@@ -12,7 +11,7 @@ import fitz
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 from loguru import logger
-# from ai_platform.config.resource import get_vl_client
+from ai_platform.config.resource import get_vl_client
 from llama_index.multi_modal_llms.dashscope import (
     DashScopeMultiModal,
     DashScopeMultiModalModels,
@@ -27,65 +26,22 @@ class MyPDFReader(BaseReader):
         enable_image_recognition: bool = True,
     ):
         self.enable_image_recognition = enable_image_recognition
-        # self._vl_client = get_vl_client()
+        self._vl_client = get_vl_client()
     
     def _resolve_image(self, image_bytes: bytes, page_num: int, img_index: int) -> str:
 
         try:
             base64_image = base64.b64encode(image_bytes).decode('utf-8')
             
-            # message = ChatMessage(
-            #     role=MessageRole.USER,
-            #     content=[
-            #         {"image": f"data:image/png;base64,{base64_image}"},
-            #         {"text": "请详细描述这张图片的内容"},
-            #     ],
-            # )
-            # response = self.vl_client.chat([message])
-            # image_urls = [
-            #     "https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg",
-            # ]
-
-            # image_documents = load_image_urls(image_urls)
-
-            # dashscope_multi_modal_llm = DashScopeMultiModal(
-            #     model_name=DashScopeMultiModalModels.QWEN_VL_MAX,
-            #     api_key=os.getenv("DASHSCOPE_APIKEY"),
-            # )
-            # response = dashscope_multi_modal_llm.complete(
-            # prompt="请详细描述这张图片的内容?",
-            # image_documents=image_documents,
-            # )
-            dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
-            messages = [
-            {
-                "role": "user",
-                "content": [
-                {"image": f"data:image/png;base64,{base64_image}"},
-                {"text": "请仅输出图像中的文本内容。"}]
-            }]
-            response = dashscope.MultiModalConversation.call(
-                #若没有配置环境变量， 请用百炼API Key将下行替换为： api_key ="sk-xxx"
-                api_key = 'sk-59c734d97ba447dc9983c2987c32c83d',
-                model = 'qwen3-vl-8b-instruct',
-                messages = messages
+            response = self._vl_client.complete(
+                prompt="请仅输出图像中的文本内容。",
+                image_documents=[Document(text=f"data:image/png;base64,{base64_image}")],
             )
             
-            logger.info(f'{img_index} 张图片成功 {response.output.choices[0].message.content[0]["text"]}')
-            # result_text = ""
-            # if hasattr(response, 'message') and hasattr(response.message, 'content'):
-            #     content = response.message.content
-            #     if isinstance(content, str):
-            #         result_text = content
-            #     elif isinstance(content, list):
-            #         for block in content:
-            #             if isinstance(block, dict) and 'text' in block:
-            #                 result_text += block['text']
-            
-            # if result_text:
-            #     logger.info(f"识别第 {page_num} 页第 {img_index} 张图片成功")
-            #     return result_text
-            return response.output.choices[0].message.content[0]["text"]
+            result_text = str(response)
+            logger.info(f'{img_index} 张图片成功识别: {result_text[:100]}...')
+
+            return result_text
             
         except Exception as e:
             logger.error(f"识别第 {page_num} 页第 {img_index} 张图片失败: {e}")

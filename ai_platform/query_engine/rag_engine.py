@@ -24,7 +24,7 @@ from llama_index.core.postprocessor import LongContextReorder
 from llama_index.core.indices.property_graph import PropertyGraphIndex
 from llama_index.core.vector_stores import VectorStoreQuery
 from llama_index.core.schema import NodeWithScore
-from llama_index.core import VectorStoreIndex
+# from llama_index.core import VectorStoreIndex
 from loguru import logger
 
 
@@ -109,15 +109,15 @@ class VectorStoreRetriever:
         """异步检索"""
 
         try:
-            nodes = await self.vector_store.query(
-                query_str,
-                self.similarity_top_k, #返回的节点  
-                self.filters
+            retriever = self.vector_store.as_retriever(
+                similarity_top_k=self.similarity_top_k,
+                filters=self.filters,
             )
+            nodes = await retriever.aretrieve(query_str)
             return nodes
         except Exception as e:
-            logger.warning(f"PGVectorStore aquery failed: {e}, fallback to index retriever")
-            retriever = self.index.query(
+            logger.warning(f"PGVectorStore aretrieve failed: {e}, fallback to index retriever")
+            retriever = self.index.as_retriever(
                 filters=self.filters,
                 similarity_top_k=self.similarity_top_k,
             )
@@ -198,8 +198,16 @@ class HybridRagEngine(BaseRagEngine):
                 similarity_top_k=similarity_top_k,
             )
     
+        fusion_retriever = QueryFusionRetriever(
+            [vector_retriever, bm25_retriever],
+            similarity_top_k=similarity_top_k,
+            num_queries=1,
+            llm=self.llm,  
+            mode=FUSION_MODES.RECIPROCAL_RANK,
+        )
+
         chat_engine = CondensePlusContextChatEngine.from_defaults(
-            retriever=[bm25_retriever, vector_retriever],
+            retriever=fusion_retriever,
             memory=self.memory_block,
             llm=self.llm,
             node_postprocessors=[LongContextReorder(), get_llm_reranker()],
