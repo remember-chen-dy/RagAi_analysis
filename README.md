@@ -264,8 +264,7 @@ rag-ai-platform/
 │   ├── pipeline/                   # 数据处理流水线
 │   │   ├── dataPipeline.py         # 主流水线（下载→解析→分割→存储）
 │   │   ├── data_filter.py          # 页眉页脚过滤器
-│   │   ├── loader.py               # 文档加载器（MinerU/多格式）
-│   │   ├── mineru_client.py        # MinerU API 客户端
+│   │   ├── loader.py               # 文档加载器（多格式）
 │   │   └── transformer.py          # 文本分割/转换组件
 │   ├── query_engine/               # RAG 查询引擎
 │   │   ├── rag_engine.py           # 混合检索 + 流式对话引擎
